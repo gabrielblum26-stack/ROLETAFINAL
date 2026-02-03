@@ -58,6 +58,12 @@ export default function LoginPage() {
             ) : null}
           </form>
         </div>
+  </div>
+  <div className="authRight">
+    <img src="/padrao-fifa-logo.png" alt="Padrão FIFA" className="authLogo" />
+  </div>
+</div>
+
       </div>
     </div>
   );
