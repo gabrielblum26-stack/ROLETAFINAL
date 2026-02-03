@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "../lib/api";
 import { useAuth } from "../state/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setToken } = useAuth();
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,9 +17,8 @@ export default function LoginPage() {
     setErr(null);
     setLoading(true);
     try {
-      const res = await api.login(username.trim(), password);
-      setToken(res.token);
-      if (res.user.role === "admin") router.push("/admin/users");
+      const user = await login(username.trim(), password);
+      if (user.role === "admin") router.push("/admin/users");
       else router.push("/app");
     } catch (ex: any) {
       setErr(ex?.message || "Erro no login");
