@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 const sessionId = crypto.randomBytes(16).toString("hex");
 await q("UPDATE users SET current_session_id=$1, current_session_issued_at=now(), last_login_at=now(), updated_at=now() WHERE id=$2", [sessionId, user.id]);
 
-const token = signToken({ userId: user.id, role: user.role, status: user.status });
+const token = signToken({ userId: user.id, role: user.role, status: user.status, sessionId });
     return ok({ token, user: { id: user.id, name: user.name, username: user.username, role: user.role, status: user.status } });
   } catch (e: any) {
     return bad(e?.message || "Erro no login", 500);
