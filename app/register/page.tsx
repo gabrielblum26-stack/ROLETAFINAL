@@ -29,7 +29,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="app">
+    <div className="app authPage">
       <div className="center">
         <div className="panel" style={{ width: 520, maxWidth: "100%", padding: 16 }}>
           <div style={{ fontWeight: 900, fontSize: 18 }}>Cadastro</div>

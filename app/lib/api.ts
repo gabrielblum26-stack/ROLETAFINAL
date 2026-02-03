@@ -62,6 +62,9 @@ export const api = {
   adminGrantMonth: (token: string, id: number) =>
     request<{ user: User }>(`/admin/users/${id}/grant-month`, { method: "POST", token }),
 
+  adminGrantLifetime: (token: string, id: number) =>
+    request<{ user: User }>(`/admin/users/${id}/grant-lifetime`, { method: "POST", token }),
+
   adminDeleteUser: (token: string, id: number) =>
     request<{ ok: true }>(`/admin/users/${id}`, { method: "DELETE", token }),
 };

@@ -27,13 +27,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="app">
-      <div className="panel" style={{ padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontWeight: 900 }}>Login (Admin & User)</div>
-        <span className="pill">MESMA TELA</span>
-      </div>
-
-      <div className="panel" style={{ flex: 1, minHeight: 0, padding: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div className="app authPage">
+<div className="panel" style={{ flex: 1, minHeight: 0, padding: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="panel" style={{ width: "min(560px, 100%)", padding: 14 }}>
           <div style={{ fontWeight: 900, fontSize: 18 }}>Acesso ao Sistema</div>
           

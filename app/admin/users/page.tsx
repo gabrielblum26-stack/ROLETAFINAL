@@ -117,6 +117,16 @@ export default function AdminUsersPage() {
 
         <div className="panel tableCard">
           <table className="adminTable">
+            <colgroup>
+              <col className="id" />
+              <col className="name" />
+              <col className="user" />
+              <col className="role" />
+              <col className="status" />
+              <col className="created" />
+              <col className="access" />
+              <col className="actions" />
+            </colgroup>
             <thead>
               <tr>
                 <th style={{ width: 60 }}>ID</th>
@@ -139,7 +149,7 @@ export default function AdminUsersPage() {
                   <td><span className={"badge" + (u.status === "blocked" ? " blocked" : "")}>{u.status}</span></td>
                   <td className="small">{fmtDate(u.created_at)}</td>
                   <td className="small">{u.access_until ? fmtDateTime(u.access_until) : "-"}</td>
-                  <td>
+                  <td className="actionsCell">
                     <div className="adminActions">
                       <button className="btn" onClick={() => setEditUser(u)}>Editar</button>
                       <button className="btn" onClick={() => setResetUser(u)}>Senha</button>
@@ -171,7 +181,23 @@ export default function AdminUsersPage() {
                       >
                         +1 mês
                       </button>
-                      <button
+                      
+<button
+  className="btn"
+  onClick={async () => {
+    if (!token) return;
+    try {
+      await api.adminGrantLifetime(token, u.id);
+      await load();
+    } catch (ex: any) {
+      setErr(ex?.message || "Erro");
+    }
+  }}
+>
+  Vitalício
+</button>
+
+<button
                         className={"btn" + (u.status === "active" ? " danger" : "")}
                         onClick={async () => {
                           if (!token) return;

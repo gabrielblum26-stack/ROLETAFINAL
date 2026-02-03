@@ -803,3 +803,48 @@ input[type="text"]{
   border-color: rgba(180, 50, 50, .35);
   background: rgba(255, 220, 220, .65);
 }
+
+
+/* ===== Auth pages (login/register) ===== */
+.authPage .panel{
+  max-width: 720px;
+  width: 100%;
+}
+.authPage .input{
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.25);
+  background: rgba(255,255,255,.65);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+  font-size: 14px;
+}
+.authPage label{
+  display:block;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.authPage .btn{
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,.22);
+  background: rgba(255,255,255,.75);
+  font-weight: 900;
+}
+.authPage .btn.primary{
+  background: #f3d36a;
+}
+
+
+/* ===== Admin table column sizing ===== */
+.adminTable col.id{ width: 60px; }
+.adminTable col.name{ width: 220px; }
+.adminTable col.user{ width: 180px; }
+.adminTable col.role{ width: 120px; }
+.adminTable col.status{ width: 120px; }
+.adminTable col.created{ width: 120px; }
+.adminTable col.access{ width: 160px; }
+.adminTable col.actions{ width: 520px; }
+.adminTable td.actionsCell{ padding-left: 18px; }
