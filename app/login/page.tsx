@@ -50,7 +50,8 @@ export default function LoginPage() {
             </div>
 
             <div className="row" style={{ gridColumn: "1 / -1", justifyContent: "space-between" }}>
-<button className="btn primary" disabled={busy}>
+              <button type="button" className="btn" onClick={() => router.push("/register")}>CADASTRE-SE</button>
+              <button className="btn primary" disabled={busy}>
                 {busy ? "Entrando..." : "Entrar"}
               </button>
             </div>
