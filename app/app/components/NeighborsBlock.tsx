@@ -1,164 +1,207 @@
 "use client";
 
-import { neighborsEU, colorOf } from "../lib/roulette";
+import { colorOf, neighborsEU } from "../lib/roulette";
 import { selClass, type SelState } from "../lib/selection";
 
-function calc(n: number) {
-  // mantém sempre o valor (mesmo fora de 0-36) conforme sua regra
-  return n;
-}
-
-type BaseTone = "red" | "black" | "green" | "neutral" | "empty";
-
-function Cell({
-  n,
-  tone,
-  sel,
-  onPick,
-  applySelection,
-  emptyDash = "-",
-}: {
-  n: number | null;
-  tone: BaseTone;
+type Props = {
+  history: number[]; // mais recente primeiro
   sel: SelState;
   onPick: (n: number) => void;
-  applySelection: boolean;
-  emptyDash?: string;
+  max?: number;
+};
+
+function digitalRoot(n: number): number {
+  const a = Math.abs(n);
+  if (a === 0) return 0;
+  return 1 + ((a - 1) % 9);
+}
+
+function disguisedKey(n: number): number {
+  // Exceção: 28 conta como disfarçado do 0
+  if (n === 28) return 0;
+  return digitalRoot(n);
+}
+
+
+function Chip({
+  value,
+  className,
+  onClick,
+  aria,
+}: {
+  value: number | string | null;
+  className: string;
+  onClick?: () => void;
+  aria?: string;
 }) {
-  if (n === null) {
-    return <div className="abcCell abcEmpty">{emptyDash}</div>;
-  }
-
-  const scls = applySelection ? selClass(sel, n) : "";
-  const cls = `abcCell ${tone} ${scls}`.trim();
-
+  const empty = value === null || value === "" || value === undefined;
   return (
-    <div className={cls} onClick={() => onPick(n)} title="Clique para selecionar (não registra)">
-      {n}
+    <div className={`${className} ${empty ? "nbEmpty" : ""}`.trim()} onClick={onClick} aria-label={aria}>
+      {empty ? "—" : value}
     </div>
   );
 }
 
-function Group3({
-  a,
-  b,
-  c,
-  tones,
-  sel,
-  onPick,
-  selMask,
-}: {
-  a: number | null;
-  b: number | null;
-  c: number | null;
-  tones: [BaseTone, BaseTone, BaseTone];
-  sel: SelState;
-  onPick: (n: number) => void;
-  selMask: [boolean, boolean, boolean];
-}) {
+export default function NeighborsBlock({ history, sel, onPick, max = 10 }: Props) {
+  const atuais = history.slice(0, max);
+
+  const dis = atuais.map((n) => disguisedKey(n));
+
+  const pairAt = (idx: number) =>
+    idx % 2 === 0 && dis[idx] !== undefined && dis[idx + 1] !== undefined ? dis[idx] + dis[idx + 1] : null;
+
+  const tripleAt = (idx: number) =>
+    idx % 3 === 0 && dis[idx] !== undefined && dis[idx + 1] !== undefined && dis[idx + 2] !== undefined
+      ? dis[idx] + dis[idx + 1] + dis[idx + 2]
+      : null;
+
+  const minusAbs = (a: number, b: number) => Math.abs(a - b);
+
+  const Mini = ({
+    value,
+    tone,
+    actualColor,
+    selClass,
+    clickable,
+    neutral,
+  }: {
+    value: number | null;
+    tone: "neutral" | "colored";
+    actualColor?: string;
+    selClass?: string;
+    clickable?: boolean;
+    neutral?: boolean;
+  }) => {
+    const empty = value === null || value === undefined;
+    const cls =
+      "nbMini " +
+      (tone === "colored" ? `nbColored ${actualColor ?? ""} ${selClass ?? ""}` : "nbNeutral") +
+      (neutral ? " nbNeutralForce" : "") +
+      (empty ? " nbEmpty" : "") +
+      (clickable ? " nbClickable" : "");
+    return (
+      <div
+        className={cls}
+        onClick={() => {
+          if (clickable && value !== null) onPick(value);
+        }}
+      >
+        {empty ? "—" : value}
+      </div>
+    );
+  };
+
+  const ColTitle = ({ children }: { children: string }) => <div className="nbColTitle">{children}</div>;
+
   return (
-    <div className="abcGroup">
-      <Cell n={a} tone={tones[0]} sel={sel} onPick={onPick} applySelection={selMask[0]} />
-      <Cell n={b} tone={tones[1]} sel={sel} onPick={onPick} applySelection={selMask[1]} />
-      <Cell n={c} tone={tones[2]} sel={sel} onPick={onPick} applySelection={selMask[2]} />
-    </div>
-  );
-}
+    <div className="panel neighborsPanel" aria-label="Vizinhos + disfarçado + agrupamentos">
+      <div className="neighborsTitle">ATUAIS (10)</div>
 
-export default function NeighborsBlock({
-  last,
-  sel,
-  onPick,
-}: {
-  last: number[];
-  sel: SelState;
-  onPick: (n: number) => void;
-}) {
-  const rows = last.slice(0, 10);
-
-  return (
-    <div className="panel middle" aria-label="Vizinhos dos 10 últimos números inseridos">
-      <div className="sectionTitle">Vizinhos (10)</div>
-
-      <div className="neiListABC">
-        {Array.from({ length: 10 }).map((_, idx) => {
-          const atual = rows[idx];
-
-          if (atual === undefined) {
-            return (
-              <div key={idx} className="neiRowABC">
-                <Group3
-                  a={null}
-                  b={null}
-                  c={null}
-                  tones={["empty", "empty", "empty"]}
-                  sel={sel}
-                  onPick={onPick}
-                  selMask={[false, false, false]}
-                />
-                <div className="abcCenterWrap">
-                  <Cell n={null} tone="empty" sel={sel} onPick={onPick} applySelection={false} />
+      <div className="nbCols">
+        {/* LEFT: atual - 1 (vizinho) */}
+        <div className="nbCol">
+          <ColTitle>atual - 1 (vizinho)</ColTitle>
+          <div className="nbStack">
+            {Array.from({ length: max }).map((_, idx) => {
+              const d = atuais[idx];
+              if (typeof d !== "number") {
+                return (
+                  <div className="nbTriple" key={idx}>
+                    <Mini value={null} tone="neutral" />
+                    <Mini value={null} tone="colored" />
+                    <Mini value={null} tone="neutral" />
+                  </div>
+                );
+              }
+              const v = neighborsEU(d).prev;
+              return (
+                <div className="nbTriple" key={idx}>
+                  <Mini value={minusAbs(v, d)} tone="neutral" neutral />
+                  <Mini value={v} tone="colored" actualColor={colorOf(v)} clickable selClass={selClass(sel, v)} />
+                  <Mini value={v + d} tone="neutral" neutral />
                 </div>
-                <Group3
-                  a={null}
-                  b={null}
-                  c={null}
-                  tones={["empty", "empty", "empty"]}
-                  sel={sel}
-                  onPick={onPick}
-                  selMask={[false, false, false]}
-                />
-              </div>
-            );
-          }
+              );
+            })}
+          </div>
+        </div>
 
-          const nb = neighborsEU(atual);
-          const menor = nb.prev; // V-1
-          const maior = nb.next; // V+1
+        {/* 2x + D */}
+        <div className="nbCol nbNarrow">
+          <ColTitle>2×</ColTitle>
+          <div className="nbStack">
+            {Array.from({ length: max }).map((_, idx) => (
+              <Mini key={idx} value={pairAt(idx)} tone="neutral" neutral />
+            ))}
+          </div>
+        </div>
 
-          // a b c (esquerda)
-          const a = calc(Math.abs(menor - atual)); // fórmula neutra (diferença sempre positiva)
-          const b = menor;                         // ANTERIOR (selecionável)
-          const c = calc(menor + atual);           // fórmula neutra
+        <div className="nbCol nbNarrow">
+          <ColTitle>D</ColTitle>
+          <div className="nbStack">
+            {Array.from({ length: max }).map((_, idx) => {
+              const d = atuais[idx];
+              return <Mini key={idx} value={typeof d === "number" ? Number(String(disguisedKey(d)).padStart(2, "0")) : null} tone="neutral" neutral />;
+            })}
+          </div>
+        </div>
 
-          // d (centro)
-          const d = atual;                         // ATUAL (selecionável)
+        {/* ATUAIS */}
+        <div className="nbCol nbAtuais">
+          <ColTitle>atuais</ColTitle>
+          <div className="nbStack">
+            {Array.from({ length: max }).map((_, idx) => {
+              const d = atuais[idx];
+              return (
+                <div className="nbSingle" key={idx}>
+                  <Mini
+                    value={typeof d === "number" ? d : null}
+                    tone="colored"
+                    actualColor={typeof d === "number" ? colorOf(d) : ""}
+                    selClass={typeof d === "number" ? selClass(sel, d) : ""}
+                    clickable
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-          // e f g (direita)
-          const e = calc(Math.abs(maior - atual)); // fórmula neutra (diferença sempre positiva)
-          const f = maior;                         // POSTERIOR (selecionável)
-          const g = calc(maior + atual);           // fórmula neutra
+        {/* 3x */}
+        <div className="nbCol nbNarrow">
+          <ColTitle>3×</ColTitle>
+          <div className="nbStack">
+            {Array.from({ length: max }).map((_, idx) => (
+              <Mini key={idx} value={tripleAt(idx)} tone="neutral" neutral />
+            ))}
+          </div>
+        </div>
 
-          const toneMenor = colorOf(menor) as BaseTone;
-          const toneAtual = colorOf(atual) as BaseTone;
-          const toneMaior = colorOf(maior) as BaseTone;
-
-          return (
-            <div key={idx} className="neiRowABC" aria-label={`Linha de vizinhos do número ${atual}`}>
-              <Group3
-                a={a}
-                b={b}
-                c={c}
-                tones={["neutral", toneMenor, "neutral"]}
-                sel={sel}
-                onPick={onPick}
-                selMask={[false, true, false]} // só o ANTERIOR recebe seleção por cor
-              />
-              <div className="abcCenterWrap">
-                <Cell n={d} tone={toneAtual} sel={sel} onPick={onPick} applySelection={true} />
-              </div>
-              <Group3
-                a={e}
-                b={f}
-                c={g}
-                tones={["neutral", toneMaior, "neutral"]}
-                sel={sel}
-                onPick={onPick}
-                selMask={[false, true, false]} // só o POSTERIOR recebe seleção por cor
-              />
-            </div>
-          );
-        })}
+        {/* RIGHT: atual + 1 (vizinho) */}
+        <div className="nbCol">
+          <ColTitle>atual + 1 (vizinho)</ColTitle>
+          <div className="nbStack">
+            {Array.from({ length: max }).map((_, idx) => {
+              const d = atuais[idx];
+              if (typeof d !== "number") {
+                return (
+                  <div className="nbTriple" key={idx}>
+                    <Mini value={null} tone="neutral" />
+                    <Mini value={null} tone="colored" />
+                    <Mini value={null} tone="neutral" />
+                  </div>
+                );
+              }
+              const v = neighborsEU(d).next;
+              return (
+                <div className="nbTriple" key={idx}>
+                  <Mini value={minusAbs(v, d)} tone="neutral" neutral />
+                  <Mini value={v} tone="colored" actualColor={colorOf(v)} clickable selClass={selClass(sel, v)} />
+                  <Mini value={v + d} tone="neutral" neutral />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
