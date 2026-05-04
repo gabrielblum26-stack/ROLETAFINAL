@@ -511,51 +511,7 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="bottomRow">
-        <div className={`panel ${minimized.terminals ? "minimized" : ""}`}>
-          <div className="panelHeader">
-            <div className="sectionTitle">Terminais</div>
-            <button className="btn-min" onClick={() => toggleMin("terminals")}>{minimized.terminals ? "+" : "−"}</button>
-          </div>
-          {!minimized.terminals && (
-            <div className="terminalsGrid">
-              {terminals.map((t) => (
-                <TerminalCard key={t.d} s={t} />
-              ))}
-            </div>
-          )}
-        </div>
 
-        <div className={`panel ${minimized.reps ? "minimized" : ""}`}>
-          <div className="panelHeader">
-            <div className="sectionTitle">Métricas</div>
-            <button className="btn-min" onClick={() => toggleMin("reps")}>{minimized.reps ? "+" : "−"}</button>
-          </div>
-          {!minimized.reps && (
-            <div className="metricsGrid">
-              <Metric title="Vermelhos" value={streaks.color.key === "red" ? streaks.color.count : 0} />
-              <Metric title="Pretos" value={streaks.color.key === "black" ? streaks.color.count : 0} />
-              <Metric title="Pares" value={streaks.parity.key === "even" ? streaks.parity.count : 0} />
-              <Metric title="Ímpares" value={streaks.parity.key === "odd" ? streaks.parity.count : 0} />
-              <Metric title="1-18" value={streaks.half.key === "low" ? streaks.half.count : 0} />
-              <Metric title="19-36" value={streaks.half.key === "high" ? streaks.half.count : 0} />
-            </div>
-          )}
-        </div>
-
-        <div className={`panel ${minimized.zone ? "minimized" : ""}`}>
-          <div className="panelHeader">
-            <div className="sectionTitle">Zona do Último</div>
-            <button className="btn-min" onClick={() => toggleMin("zone")}>{minimized.zone ? "+" : "−"}</button>
-          </div>
-          {!minimized.zone && topZonePattern && (
-            <div className="zonePattern">
-              <div>Último: {topZonePattern.xExample}</div>
-              <div>Frequência: {topZonePattern.count}</div>
-            </div>
-          )}
-        </div>
-      </div>
 
       <style jsx>{`
         .distCalcExpanded {
