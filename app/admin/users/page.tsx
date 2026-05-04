@@ -99,20 +99,21 @@ export default function AdminUsersPage() {
       <Topbar />
 
       <div className="tableWrap">
-        <div className="panel" style={{ padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div className="row">
+        <div className="adminHeader">
+          <div className="searchBox">
             <input
-              className="input"
-              style={{ width: 280 }}
-              placeholder="Buscar por nome ou @user"
+              className="searchInput"
+              placeholder="🔍 Buscar por nome ou @user"
               value={q}
               onChange={(e) => { setPage(1); setQ(e.target.value); }}
             />
-            <span className="pill">{total} usuários</span>
-            {busy ? <span className="pill">Carregando...</span> : null}
+            <div className="searchStats">
+              <span className="statBadge">{total} usuários</span>
+              {busy && <span className="statBadge loading">⏳ Carregando...</span>}
+            </div>
           </div>
 
-          <button className="btn primary" onClick={() => setShowCreate(true)}>+ Novo usuário</button>
+          <button className="btnNewUser" onClick={() => setShowCreate(true)}>+ Novo usuário</button>
         </div>
 
         <div className="panel tableCard">

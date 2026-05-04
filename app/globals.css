@@ -1527,3 +1527,136 @@ input[type="text"]{
     font-size: 11px;
   }
 }
+
+
+/* ===== ADMIN SEARCH & HEADER ===== */
+.adminHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(31, 31, 31, 0.8) 0%, rgba(25, 25, 35, 0.8) 100%);
+  border: 1px solid rgba(255, 208, 0, 0.1);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.searchInput {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 208, 0, 0.2);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  outline: none;
+  width: 100%;
+}
+
+.searchInput:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ffd000;
+  box-shadow: 0 0 12px rgba(255, 208, 0, 0.2);
+}
+
+.searchInput::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.searchStats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.statBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 208, 0, 0.1);
+  border: 1px solid rgba(255, 208, 0, 0.3);
+  border-radius: 8px;
+  color: #ffd000;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statBadge.loading {
+  animation: pulse 1.5s infinite;
+}
+
+.btnNewUser {
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #ffd000 0%, #ffb700 100%);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(255, 208, 0, 0.25);
+}
+
+.btnNewUser:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 208, 0, 0.35);
+}
+
+.btnNewUser:active {
+  transform: translateY(0);
+}
+
+/* ===== RESPONSIVE ADMIN HEADER ===== */
+@media (max-width: 768px) {
+  .adminHeader {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .searchBox {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .btnNewUser {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .adminHeader {
+    padding: 12px;
+  }
+
+  .searchInput {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  .statBadge {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .btnNewUser {
+    font-size: 12px;
+    padding: 9px 14px;
+  }
+}
