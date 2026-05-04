@@ -150,11 +150,11 @@ export default function AdminUsersPage() {
                   <td className="small">{fmtDate(u.created_at)}</td>
                   <td className="small">{u.access_until ? fmtDateTime(u.access_until) : "-"}</td>
                   <td className="actionsCell">
-                    <div className="adminActions">
-                      <button className="btn" onClick={() => setEditUser(u)}>Editar</button>
-                      <button className="btn" onClick={() => setResetUser(u)}>Senha</button>
+                    <div className="userActions">
+                      <button className="actionBtn" onClick={() => setEditUser(u)}>Editar</button>
+                      <button className="actionBtn" onClick={() => setResetUser(u)}>Senha</button>
                       <button
-                        className="btn"
+                        className="actionBtn success"
                         onClick={async () => {
                           if (!token) return;
                           try {
@@ -168,7 +168,7 @@ export default function AdminUsersPage() {
                         Teste 2d
                       </button>
                       <button
-                        className="btn"
+                        className="actionBtn success"
                         onClick={async () => {
                           if (!token) return;
                           try {
@@ -181,24 +181,22 @@ export default function AdminUsersPage() {
                       >
                         +1 mês
                       </button>
-                      
-<button
-  className="btn"
-  onClick={async () => {
-    if (!token) return;
-    try {
-      await api.adminGrantLifetime(token, u.id);
-      await load();
-    } catch (ex: any) {
-      setErr(ex?.message || "Erro");
-    }
-  }}
->
-  Vitalício
-</button>
-
-<button
-                        className={"btn" + (u.status === "active" ? " danger" : "")}
+                      <button
+                        className="actionBtn success"
+                        onClick={async () => {
+                          if (!token) return;
+                          try {
+                            await api.adminGrantLifetime(token, u.id);
+                            await load();
+                          } catch (ex: any) {
+                            setErr(ex?.message || "Erro");
+                          }
+                        }}
+                      >
+                        Vitalício
+                      </button>
+                      <button
+                        className={"actionBtn" + (u.status === "active" ? " danger" : " success")}
                         onClick={async () => {
                           if (!token) return;
                           try {
@@ -211,25 +209,23 @@ export default function AdminUsersPage() {
                       >
                         {u.status === "active" ? "Bloquear" : "Ativar"}
                       </button>
-                    
-<button
-  className="btn danger"
-  onClick={async () => {
-    if (!token) return;
-    const ok = confirm(`Excluir @${u.username}? Essa ação é irreversível.`);
-    if (!ok) return;
-    try {
-      await api.adminDeleteUser(token, u.id);
-      await load();
-    } catch (ex: any) {
-      setErr(ex?.message || "Erro");
-    }
-  }}
->
-  Excluir
-</button>
-
-</div>
+                      <button
+                        className="actionBtn danger"
+                        onClick={async () => {
+                          if (!token) return;
+                          const ok = confirm(`Excluir @${u.username}? Essa ação é irreversível.`);
+                          if (!ok) return;
+                          try {
+                            await api.adminDeleteUser(token, u.id);
+                            await load();
+                          } catch (ex: any) {
+                            setErr(ex?.message || "Erro");
+                          }
+                        }}
+                      >
+                        Excluir
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

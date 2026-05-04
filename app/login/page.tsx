@@ -28,58 +28,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="app authPage">
-      <div className="center">
-        <div className="authSplit">
-          <div className="authLeft">
-            <div className="panel" style={{ width: "min(560px, 100%)", padding: 14 }}>
-              <div style={{ fontWeight: 900, fontSize: 18 }}>Acesso ao Sistema</div>
-              <div className="line" />
-              <form onSubmit={onSubmit}>
-                <div className="grid2">
-                  <div>
-                    <label>Usuário</label>
-                    <input
-                      className="input"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      autoComplete="username"
-                    />
-                  </div>
-                  <div>
-                    <label>Senha</label>
-                    <input
-                      className="input"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="current-password"
-                    />
-                  </div>
-                </div>
+    <div className="loginContainer">
+      <div className="loginContent">
+        <div className="loginHeader">
+          <h1 className="loginTitle">ROLETA PADRÃO FIFA 2026</h1>
+        </div>
 
-                <div className="row" style={{ marginTop: 10, justifyContent: "space-between" }}>
-                  <button type="button" className="btn" onClick={() => router.push("/register")}>
-                    CADASTRE-SE
-                  </button>
-
-                  <button type="submit" className="btn primary" disabled={loading}>
-                    {loading ? "Entrando..." : "Entrar"}
-                  </button>
-                </div>
-
-                {err ? (
-                  <div className="small" style={{ marginTop: 10, color: "#b00020", fontWeight: 800 }}>
-                    {err}
-                  </div>
-                ) : null}
-              </form>
+        <div className="loginPanel">
+          <form onSubmit={onSubmit} className="loginForm">
+            <div className="formGroup">
+              <label htmlFor="username" className="formLabel">Usuário</label>
+              <input
+                id="username"
+                className="formInput"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Digite seu usuário"
+                autoComplete="username"
+                disabled={loading}
+              />
             </div>
-          </div>
 
-          <div className="authRight">
-            <img src="/padrao-fifa-logo.png" alt="Padrão FIFA" className="authLogo" />
-          </div>
+            <div className="formGroup">
+              <label htmlFor="password" className="formLabel">Senha</label>
+              <input
+                id="password"
+                className="formInput"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Digite sua senha"
+                autoComplete="current-password"
+                disabled={loading}
+              />
+            </div>
+
+            {err && (
+              <div className="errorMessage">
+                {err}
+              </div>
+            )}
+
+            <div className="formActions">
+              <button 
+                type="button" 
+                className="btn btnSecondary" 
+                onClick={() => router.push("/register")}
+                disabled={loading}
+              >
+                CADASTRE-SE
+              </button>
+
+              <button 
+                type="submit" 
+                className="btn btnPrimary" 
+                disabled={loading}
+              >
+                {loading ? "Entrando..." : "ENTRAR"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
