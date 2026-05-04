@@ -29,6 +29,7 @@ export default function MovementPanel({
   const [mode, setMode] = useState<DistanceMode>("shortest");
   const [activeMarkColor, setActiveMarkColor] = useState<number>(0);
   const [marks, setMarks] = useState<Record<string, string>>({});
+  const [calcValue, setCalcValue] = useState<string>("");
 
   const movements: MovementRecord[] = [];
   for (let i = 0; i < Math.min(history.length - 1, 100); i++) {
@@ -66,6 +67,45 @@ export default function MovementPanel({
     }
   }
 
+  // Lógica da calculadora de vizinhos
+  const calcResults = (() => {
+    if (calcValue === "") return null;
+    const num = parseInt(calcValue);
+    if (isNaN(num) || num < 0 || num > 36) return null;
+
+    const idx = WHEEL_EU.indexOf(num);
+    if (idx < 0) return null;
+
+    const L = WHEEL_EU.length;
+    
+    // Vizinho à esquerda
+    const leftIdx = (idx - 1 + L) % L;
+    const leftNum = WHEEL_EU[leftIdx];
+    
+    // Vizinho à direita
+    const rightIdx = (idx + 1) % L;
+    const rightNum = WHEEL_EU[rightIdx];
+
+    // Cálculo de distâncias para ESQ+X e DIR+X
+    // ESQ + X (H): distância do vizinho esquerdo para X no sentido horário
+    // ESQ + X (A): distância do vizinho esquerdo para X no sentido anti-horário
+    // DIR + X (H): distância do vizinho direito para X no sentido horário
+    // DIR + X (A): distância do vizinho direito para X no sentido anti-horário
+
+    const { h: esqH, ah: esqA } = wheelDistance(leftNum, num);
+    const { h: dirH, ah: dirA } = wheelDistance(rightNum, num);
+
+    return {
+      num,
+      leftNum,
+      rightNum,
+      esqH,
+      esqA,
+      dirH,
+      dirA
+    };
+  })();
+
   const handleCellClick = (direction: string, distance: number) => {
     const key = `${direction}/${distance}`;
     const color = MARK_COLORS[activeMarkColor];
@@ -82,16 +122,6 @@ export default function MovementPanel({
       <div className="movementHeader">
         <div className="movementTitle">DESLOCAMENTO (H/A)</div>
         <div className="movementControls">
-          <div className="markColorPicker">
-            {MARK_COLORS.map((c, idx) => (
-              <div
-                key={idx}
-                className={`markColorCircle ${activeMarkColor === idx ? "active" : ""}`}
-                style={{ backgroundColor: c }}
-                onClick={() => setActiveMarkColor(idx)}
-              />
-            ))}
-          </div>
           <button className="btn-reset-marks" onClick={() => setMarks({})}>RESET</button>
           <div className="movementModeSelector">
             <button className={`modeBtn ${mode === "shortest" ? "active" : ""}`} onClick={() => setMode("shortest")}>CURTO</button>
@@ -123,20 +153,56 @@ export default function MovementPanel({
 
           <div className="highlightRow secondary">
             <div className="highlightBox">
-              <div className="highlightLabel">SOMA ÚLT. 2</div>
-              <div className="highlightValue" style={{ color: "#ffd000" }}>{sumDist || "--"}</div>
-            </div>
-            <div className="highlightBox highlightEsquerda">
               <div className="highlightLabel">ESQUERDA</div>
               <div className="highlightValue" style={{ color: "#26d07c" }}>{sumLeftNum !== -1 ? sumLeftNum : "--"}</div>
             </div>
-            <div className="highlightBox highlightDireita">
+            <div className="highlightBox">
               <div className="highlightLabel">DIREITA</div>
               <div className="highlightValue" style={{ color: "#26d07c" }}>{sumRightNum !== -1 ? sumRightNum : "--"}</div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Calculadora de Vizinhos */}
+      <div className="calculatorSection">
+        <div className="calcRow">
+          <div className="calcLabel">VALOR X:</div>
+          <input
+            type="number"
+            min="0"
+            max="36"
+            value={calcValue}
+            onChange={(e) => setCalcValue(e.target.value)}
+            placeholder="0"
+            className="calcInput"
+          />
+          <div className="calcDisplay">{calcValue || "0"}</div>
+        </div>
+
+        {calcResults && (
+          <div className="calcResults">
+            <div className="calcResultRow">
+              <div className="calcResultBox">
+                <span className="calcResultLabel">ESQ + X (H)</span>
+                <span className="calcResultValue">{calcResults.esqH}</span>
+              </div>
+              <div className="calcResultBox">
+                <span className="calcResultLabel">ESQ + X (A)</span>
+                <span className="calcResultValue">{calcResults.esqA}</span>
+              </div>
+              <div className="calcResultBox">
+                <span className="calcResultLabel">DIR + X (H)</span>
+                <span className="calcResultValue">{calcResults.dirH}</span>
+              </div>
+              <div className="calcResultBox">
+                <span className="calcResultLabel">DIR + X (A)</span>
+                <span className="calcResultValue">{calcResults.dirA}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="movementGrid compact">
         {movements.length === 0 ? (
@@ -170,11 +236,96 @@ export default function MovementPanel({
       <style jsx>{`
         .movementPanel.compact { padding: 8px; }
         .movementTitle { font-size: 11px; font-weight: 900; color: #888; }
+        .movementHeader {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+        .movementControls {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
         .movementHighlight.compact { gap: 4px; margin-bottom: 8px; padding: 6px; }
-        .highlightRow { gap: 4px; }
+        .highlightRow { 
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 4px;
+        }
+        .highlightRow.secondary {
+          grid-template-columns: repeat(2, 1fr);
+        }
         .highlightBox { padding: 4px 2px; border-radius: 4px; }
         .highlightLabel { font-size: 7px; margin-bottom: 1px; }
         .highlightValue { font-size: 14px; }
+        
+        .calculatorSection {
+          border-top: 1px solid rgba(255,255,255,0.1);
+          padding-top: 6px;
+          margin-bottom: 6px;
+        }
+        .calcRow {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 6px;
+        }
+        .calcLabel {
+          font-size: 9px;
+          font-weight: 700;
+          color: #aaa;
+          min-width: 50px;
+        }
+        .calcInput {
+          width: 50px;
+          padding: 4px 6px;
+          border: 1px solid #444;
+          background: #1a1a1a;
+          color: #fff;
+          border-radius: 3px;
+          font-size: 11px;
+          text-align: center;
+        }
+        .calcDisplay {
+          font-size: 12px;
+          font-weight: bold;
+          color: #ffd000;
+          min-width: 20px;
+        }
+        .calcResults {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .calcResultRow {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 3px;
+        }
+        .calcResultBox {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 3px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 3px;
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+        .calcResultLabel {
+          font-size: 7px;
+          color: #888;
+          font-weight: 700;
+          margin-bottom: 1px;
+          text-align: center;
+          line-height: 1;
+        }
+        .calcResultValue {
+          font-size: 11px;
+          font-weight: bold;
+          color: #26d07c;
+        }
+        
         .movementGrid.compact { 
           display: grid; 
           grid-template-columns: repeat(10, 1fr); 
