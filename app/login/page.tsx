@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../state/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user, loading: authLoading } = useAuth();
+
+  // Se já estiver logado, redireciona para o app
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === "admin") router.replace("/admin/users");
+      else router.replace("/app");
+    }
+  }, [user, authLoading, router]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
