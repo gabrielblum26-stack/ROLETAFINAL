@@ -128,7 +128,7 @@ export default function Page() {
 
   const longGridItems = useMemo(() => {
     const arr: (number | null)[] = [];
-    for (let i = 0; i < LONG_N; i++) arr.push(history[i] ?? null);
+    for (let i = 0; i < 80; i++) arr.push(history[i] ?? null);
     return arr;
   }, [history]);
 
@@ -315,89 +315,63 @@ export default function Page() {
           <button className="btn btn-keyboard" onClick={openKeyboard} style={{ background: "#9333ea", color: "#fff" }}>
             KEYBOARD
           </button>
-          <button 
-            className="btn btn-contador" 
-            onClick={() => window.open('/contador', 'RouletteContador', 'width=1100,height=800')} 
-            style={{ background: "#f59e0b", color: "#fff" }}
-          >
+          <button className="btn btn-contador" onClick={openStrategies} style={{ background: "#f59e0b", color: "#000" }}>
             CONTADOR
           </button>
-          <button className="btn btn-strategies" onClick={openStrategies} style={{ background: "#22c55e", color: "#fff" }}>
+          <button className="btn btn-colors" onClick={openStrategies} style={{ background: "#22c55e", color: "#fff" }}>
             ESTRATEGIAS
           </button>
         </div>
 
         <div className="topbarLine secondary">
-          <button className="btn btn-colors" onClick={onResetColors} title="Limpa apenas seleções">
+          <button className="btn btn-colors" onClick={onResetColors} style={{ background: "#3b82f6", color: "#fff", minWidth: '150px' }}>
             RESET DE CORES
           </button>
-
+          
           <div className="colorPicker">
-            <span className="colorLabel">COR ATIVA:</span>
-            {SEL_ORDER.map((_, idx) => (
+            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#888' }}>COR ATIVA:</span>
+            {SEL_ORDER.map((_, i) => (
               <div
-                key={idx}
-                className={`colorCircle activeC${idx + 1} ${sel.activeColorIndex === idx ? "active" : ""}`}
-                style={{ backgroundColor: `var(--selC${idx + 1})` }}
-                onClick={() => onColorChange(idx)}
-                title={`Cor ${idx + 1}`}
+                key={i}
+                className={`colorCircle ${sel.activeColorIndex === i ? "active" : ""}`}
+                style={{ backgroundColor: `var(--selC${i + 1})` }}
+                onClick={() => onColorChange(i)}
               />
             ))}
           </div>
 
-          <div className="modeSelectWrap" title="Muda a função do seletor de cores">
-            <span className="modeLabel">MODO</span>
-            <select
+          <div className="modeSelectWrap">
+            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#888' }}>MODO</span>
+            <select 
               className="modeSelect"
               value={selMode}
               onChange={(e) => setSelMode(e.target.value as SelMode)}
-              aria-label="Modo do seletor de cores"
             >
               <option value="neighbors">1 — Vizinhos</option>
               <option value="unique">2 — Único</option>
-              <option value="terminalDisguised">3 — Disfarçados do Terminal</option>
-              <option value="sumDisguised">4 — Disfarçados da Soma</option>
-              <option value="newMarking">5 — Nova marcação</option>
-              <option value="zoneMarking">6 — Marcação de zona</option>
             </select>
           </div>
 
-          <div className="markingModeWrap" title="Alterna entre marcacao unica e acumulada">
-            <span className="markingLabel">MARCACAO</span>
-            <button
-              className={`markingBtn ${markingMode === "unique" ? "active" : ""}`}
+          <div className="markingModeWrap">
+            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#888' }}>MARCACAO</span>
+            <button 
+              className={`markingModeBtn ${markingMode === "unique" ? "active" : ""}`}
               onClick={() => setMarkingMode("unique")}
-              title="Cada clique limpa a cor anterior"
             >
-              Unica
+              UNICA
             </button>
-            <button
-              className={`markingBtn ${markingMode === "cumulative" ? "active" : ""}`}
+            <button 
+              className={`markingModeBtn ${markingMode === "cumulative" ? "active" : ""}`}
               onClick={() => setMarkingMode("cumulative")}
-              title="Cliques acumulam na mesma cor"
             >
-              Acumulada
+              ACUMULADA
             </button>
           </div>
         </div>
       </div>
 
-      <div className="panel lastStrip" aria-label="Últimos números">
-        {lastTen.map((n, idx) => (
-          <div
-            key={idx}
-            className={`chip ${colorOf(n)}`}
-            style={getCellStyles(n)}
-            onClick={() => onSelect(n)}
-            title="Clique para selecionar"
-          >
-            {n}
-          </div>
-        ))}
-      </div>
-
       {mergedNumbers.numbers.length > 0 && (
-        <div className="panel mergedStrip" style={{ marginTop: '10px', border: '2px solid #3b82f6', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px' }}>
+        <div className="panel" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '10px 15px' }}>
             <span style={{ fontWeight: 'bold', color: '#3b82f6', whiteSpace: 'nowrap' }}>
               MESCLADOS ({mergedNumbers.maxCount} MARCAÇÕES):
@@ -421,7 +395,7 @@ export default function Page() {
       <div className="main">
         <div className={`panel left ${minimized.history ? "minimized" : ""}`}>
           <div className="panelHeader">
-            <div className="sectionTitle">Histórico (150)</div>
+            <div className="sectionTitle">Histórico (80)</div>
             <button className="btn-min" onClick={() => toggleMin("history")}>{minimized.history ? "+" : "−"}</button>
           </div>
           {!minimized.history && (
@@ -449,6 +423,7 @@ export default function Page() {
             </>
           )}
         </div>
+
         <div className="middleCols">
           <div className={`panel-wrap ${minimized.neighbors ? "minimized" : ""}`}>
             <NeighborsBlock 
@@ -502,14 +477,16 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="rightCol">
+        <div className="right">
           <div className={`panel-wrap ${minimized.trackMap ? "minimized" : ""}`}>
             <div className="panelHeader">
               <div className="sectionTitle">Mapa da Mesa</div>
               <button className="btn-min" onClick={() => toggleMin("trackMap")}>{minimized.trackMap ? "+" : "−"}</button>
             </div>
             {!minimized.trackMap && (
-              <TableMap sel={sel} onPick={onSelect} repHighlights={repHighlights} getCellStyles={getCellStyles} />
+              <div className="tableMapContainer">
+                <TableMap sel={sel} onPick={onSelect} repHighlights={repHighlights} getCellStyles={getCellStyles} />
+              </div>
             )}
           </div>
 
@@ -524,8 +501,6 @@ export default function Page() {
           </div>
         </div>
       </div>
-
-
     </div>
   );
 }
