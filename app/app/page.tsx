@@ -1,62 +1,143 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../state/AuthProvider";
-import Topbar from "../components/Topbar";
-import { colorOf, parseInput, neighborsEU } from "./lib/roulette";
+import { colorOf, parseInput, neighborsEU, WHEEL_EU } from "./lib/roulette";
+import { initSel, applyClick, selClass, SelMode, setActiveColor, SEL_ORDER, markMultiple, getNumberColors } from "./lib/selection";
 import RaceTrack from "./components/RaceTrack";
-import TableMap, { RepHighlight } from "./components/TableMap";
+import TableMap, { type RepHighlight } from "./components/TableMap";
 import NeighborsBlock from "./components/NeighborsBlock";
-import { initSel, applyClick, selClass, SelMode } from "./lib/selection";
 import { computeStreaks } from "./lib/streaks";
 import { computeTerminals } from "./lib/terminals";
 import { TerminalCard } from "./components/TerminalCard";
 import { Metric } from "./components/Metric";
+import MovementPanel from "./components/MovementPanel";
 
 const SHORT_N = 20;
-const LONG_N = 100; // ajustado para caber com o bloco de vizinhos (sem scroll)
+const LONG_N = 150;
 
 export default function Page() {
-
-const { user, loading } = useAuth();
-const router = useRouter();
-
-useEffect(() => {
-  if (!loading && !user) router.replace("/login");
-}, [loading, user, router]);
-
-if (loading) {
-  return (
-    <div className="app">
-      <Topbar />
-      <div className="panel" style={{ padding: 14 }}>Carregando...</div>
-    </div>
-  );
-}
-if (!user) return null;
-
-
   const [raw, setRaw] = useState("");
-  const [history, setHistory] = useState<number[]>([]); // mais recente primeiro
+  const [history, setHistory] = useState<number[]>([]);
   const [sel, setSel] = useState(initSel());
   const [selMode, setSelMode] = useState<SelMode>("neighbors");
-  const [showColorPrompt, setShowColorPrompt] = useState(false);
-
-
+  const [markingMode, setMarkingMode] = useState<"unique" | "cumulative">("cumulative");
   const [showEaster99, setShowEaster99] = useState(false);
+  const [onlyIntersections, setOnlyIntersections] = useState(false);
 
-  
-function triggerEaster99() {
-  if (typeof window === "undefined") return;
-  const key = "easter99Seen";
-  if (window.localStorage.getItem(key) === "1") return;
+  // Estados para o Calculador de Distância
+  const [distN1, setDistN1] = useState<number | null>(null);
+  const [distN2, setDistN2] = useState<number | null>(null);
+  const [pickingFor, setPickingFor] = useState<"n1" | "n2" | null>(null);
 
-  window.localStorage.setItem(key, "1");
-  setShowEaster99(true);
-  window.setTimeout(() => setShowEaster99(false), 2600);
-}
-function addNumber(n: number) {
+  // Estados para minimizar blocos
+  const [minimized, setMinimized] = useState({
+    history: false,
+    neighbors: false,
+    raceDist: false,
+    trackMap: false,
+    terminals: false,
+    reps: false,
+    zone: false
+  });
+
+  const toggleMin = (key: keyof typeof minimized) => {
+    setMinimized(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  function triggerEaster99() {
+    if (typeof window === "undefined") return;
+    const key = "easter99Seen";
+    if (window.localStorage.getItem(key) === "1") return;
+    window.localStorage.setItem(key, "1");
+    setShowEaster99(true);
+    window.setTimeout(() => setShowEaster99(false), 2600);
+  }
+
+  useEffect(() => {
+    if (history.length > 0 && history[0] === 99) triggerEaster99();
+    
+    // Sincronizar histórico com outras janelas
+    localStorage.setItem("roulette_history", JSON.stringify(history));
+    const bc = new BroadcastChannel("roulette_history_sync");
+    bc.postMessage({ type: "UPDATE_HISTORY", value: history });
+    bc.close();
+  }, [history]);
+
+  useEffect(() => {
+    // Escutar comandos vindos das janelas Keyboard ou Estratégias
+    const bc = new BroadcastChannel("roulette_keyboard");
+    bc.onmessage = (event) => {
+      if (event.data.type === "ADD_NUMBER") {
+        addNumber(event.data.value);
+      } else if (event.data.type === "MARK_STRATEGY") {
+        const nums = event.data.value as number[];
+        const colorIndex = event.data.colorIndex;
+        onMarkStrategy(nums, colorIndex);
+      } else if (event.data.type === "RESET_COLORS") {
+        onResetColors();
+      } else if (event.data.type === "SET_ACTIVE_COLOR") {
+        onColorChange(event.data.value);
+      }
+    };
+    return () => bc.close();
+  }, [markingMode, sel]);
+
+  const openKeyboard = () => {
+    const width = 500;
+    const height = 600;
+    const left = window.screen.width - width - 50;
+    const top = 100;
+    
+    window.open(
+      "/keyboard",
+      "RouletteKeyboard",
+      `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
+    );
+  };
+
+  const openStrategies = () => {
+    const width = 600;
+    const height = 700;
+    const left = 50;
+    const top = 100;
+    
+    window.open(
+      "/estrategias",
+      "RouletteStrategies",
+      `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
+    );
+  };
+
+  const longGridItems = useMemo(() => {
+    const arr: (number | null)[] = [];
+    for (let i = 0; i < LONG_N; i++) arr.push(history[i] ?? null);
+    return arr;
+  }, [history]);
+
+  const lastTen = useMemo(() => history.slice(0, 10), [history]);
+
+  const repHighlights = useMemo((): Set<RepHighlight> => {
+    return new Set();
+  }, [lastTen]);
+
+  const disguisedPairIdx = useMemo(() => {
+    const set = new Set<number>();
+    for (let i = 0; i < history.length - 1; i++) {
+      const a = history[i];
+      const b = history[i + 1];
+      if (a !== undefined && b !== undefined) {
+        const aRoot = a === 28 ? 0 : 1 + ((a - 1) % 9);
+        const bRoot = b === 28 ? 0 : 1 + ((b - 1) % 9);
+        if (aRoot === bRoot && a !== b) {
+          set.add(i);
+          set.add(i + 1);
+        }
+      }
+    }
+    return set;
+  }, [history]);
+
+  function addNumber(n: number) {
     setHistory((prev) => {
       const next = [n, ...prev];
       return next.slice(0, LONG_N);
@@ -64,379 +145,413 @@ function addNumber(n: number) {
   }
 
   function onSend() {
-    const parts = raw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean);
-    if (parts.length === 0) return;
-
-    let didSomething = false;
-
-    for (const p of parts) {
-      const n = Number(p);
-      if (!Number.isFinite(n)) continue;
-
-      if (n === 99) {
-        triggerEaster99();
-        didSomething = true;
-        continue;
-      }
-
-      if (Number.isInteger(n) && n >= 0 && n <= 36) {
-        addNumber(n);
-        didSomething = true;
-      }
+    const nums = parseInput(raw);
+    if (nums.length > 0) {
+      nums.forEach(addNumber);
+      setRaw("");
     }
-
-    if (didSomething) setRaw("");
   }
 
   function onUndoLast() {
-    setHistory((prev) => (prev.length ? prev.slice(1) : prev));
+    if (history.length > 0) setHistory(history.slice(1));
   }
 
   function onResetAll() {
-    setRaw("");
     setHistory([]);
     setSel(initSel());
   }
 
   function onResetColors() {
+    setHistory([]);
     setSel(initSel());
-    setShowColorPrompt(false);
   }
 
   function onSelect(n: number) {
+    if (pickingFor === "n1") {
+      setDistN1(n);
+      setPickingFor(null);
+      return;
+    }
+    if (pickingFor === "n2") {
+      setDistN2(n);
+      setPickingFor(null);
+      return;
+    }
+    setSel((prev) => applyClick(prev, n, selMode, markingMode));
+  }
+
+  function onColorChange(index: number) {
+    setSel((prev) => setActiveColor(prev, index));
+  }
+
+  function onMarkStrategy(nums: number[], colorIndex?: number) {
     setSel((prev) => {
-      const next = applyClick(prev, n, selMode);
-      // se acabou de usar a 20ª cor (cursor estava no último índice), avisa
-      if (prev.cursor === 19) {
-        setShowColorPrompt(true);
-      }
-      return next;
+      const targetColorIndex = colorIndex !== undefined ? colorIndex : prev.activeColorIndex;
+      const tempSel = setActiveColor(prev, targetColorIndex);
+      return markMultiple(tempSel, nums, markingMode);
     });
   }
+
+  
+  // Lógica de Números Mesclados (Convergência Máxima)
+  const mergedNumbers = useMemo(() => {
+    const counts: Record<number, number> = {};
+    let maxCount = 0;
+
+    for (let n = 0; n <= 36; n++) {
+      const count = getNumberColors(sel, n).length;
+      if (count > 0) {
+        counts[n] = count;
+        if (count > maxCount) maxCount = count;
+      }
+    }
+
+    if (maxCount <= 1) return { numbers: [], maxCount: 0 };
+
+    const result = Object.entries(counts)
+      .filter(([_, count]) => count === maxCount)
+      .map(([n, _]) => parseInt(n));
+
+    return { numbers: result, maxCount };
+  }, [sel]);
 
   const streaks = useMemo(() => computeStreaks(history), [history]);
   const terminals = useMemo(() => computeTerminals(history), [history]);
 
-  const repHighlights = useMemo(() => {
-    const s = new Set<RepHighlight>();
-
-    if (streaks.color.count >= 2) {
-      if (streaks.color.key === "red") s.add("red");
-      if (streaks.color.key === "black") s.add("black");
-    }
-    if (streaks.parity.count >= 2) {
-      if (streaks.parity.key === "even") s.add("even");
-      if (streaks.parity.key === "odd") s.add("odd");
-    }
-    if (streaks.half.count >= 2) {
-      if (streaks.half.key === "low") s.add("low");
-      if (streaks.half.key === "high") s.add("high");
-    }
-    if (streaks.dozen.count >= 2) {
-      if (streaks.dozen.key === 1) s.add("dozen1");
-      if (streaks.dozen.key === 2) s.add("dozen2");
-      if (streaks.dozen.key === 3) s.add("dozen3");
-    }
-    if (streaks.column.count >= 2) {
-      if (streaks.column.key === 1) s.add("col1");
-      if (streaks.column.key === 2) s.add("col2");
-      if (streaks.column.key === 3) s.add("col3");
+  const getCellStyles = (n: number) => {
+    const colors = getNumberColors(sel, n);
+    
+    // Filtro de intersecção
+    if (onlyIntersections && mergedNumbers.maxCount > 1) {
+      if (colors.length < mergedNumbers.maxCount) {
+        return { opacity: 0.1, pointerEvents: 'none' as const, transition: 'all 0.3s' };
+      }
     }
 
-    return s;
-  }, [streaks]);
-
-  const longGridItems = useMemo(() => {
-  const arr: (number | null)[] = [];
-  for (let i = 0; i < LONG_N; i++) arr.push(history[i] ?? null);
-  return arr;
-}, [history]);
-
-const topZonePattern = useMemo(() => {
-  const chrono = [...history].reverse(); // mais antigo -> mais recente
-
-  const digitalRoot = (n: number) => {
-    const a = Math.abs(n);
-    if (a === 0) return 0;
-    return 1 + ((a - 1) % 9);
-  };
-  const disguisedKey = (n: number) => (n === 28 ? 0 : digitalRoot(n));
-
-  const allNums = Array.from({ length: 37 }, (_, n) => n);
-  const membersOfTerminal = (t: number) => allNums.filter((n) => n % 10 === t);
-  const membersOfDisfar = (s: number) => allNums.filter((n) => disguisedKey(n) === s);
-
-  type Trigger = { kind: "N" | "T" | "D" | "S"; id: string; label: string; members: number[] };
-
-  const triggersFor = (x: number): Trigger[] => {
-    const t = x % 10;
-    const d = disguisedKey(x);
-    const list: Trigger[] = [
-      { kind: "N", id: `N:${x}`, label: `X ${x}`, members: [x] },
-      { kind: "T", id: `T:${t}`, label: `Terminal ${t}`, members: membersOfTerminal(t) },
-      { kind: "D", id: `D:${d}`, label: `Disfarçado ${d}`, members: membersOfDisfar(d) },
-    ];
-    if (d === x) list.push({ kind: "S", id: `S:${x}`, label: `Seco ${String(x).padStart(2, "0")}`, members: [x] });
-    return list;
+    if (colors.length === 0) return {};
+    if (colors.length === 1) return { backgroundColor: colors[0], boxShadow: `0 0 15px ${colors[0]}88` };
+    const step = 100 / colors.length;
+    const gradientParts = colors.map((c, i) => `${c} ${i * step}%, ${c} ${(i + 1) * step}%`);
+    return {
+      background: `linear-gradient(135deg, ${gradientParts.join(", ")})`,
+      boxShadow: `0 0 15px ${colors[0]}88`
+    };
   };
 
-  type Pattern = {
-    triggerLabel: string;
-    triggerKind: Trigger["kind"];
-    triggerMembers: number[];
-    xExample: number;
-    count: number;
-    setNums: number[];
-    zones9: number[];
-  };
+  const topZonePattern = useMemo(() => {
+    if (history.length === 0) return null;
+    const last = history[0];
+    const count = history.filter((x) => x === last).length;
+    return {
+      xExample: last,
+      count,
+      triggerKind: "T" as const,
+      triggerLabel: `Terminal ${last % 10}`,
+      triggerMembers: [],
+      zones9: [last],
+    };
+  }, [history]);
 
-  const counts = new Map<string, Pattern>();
-
-  const zoneOf = (n: number) => {
-    const nb = neighborsEU(n);
-    return [nb.prev, n, nb.next] as [number, number, number];
-  };
-
-  for (let i = 0; i + 3 < chrono.length; i++) {
-    const x = chrono[i];
-    const w1 = chrono[i + 1];
-    const w2 = chrono[i + 2];
-    const w3 = chrono[i + 3];
-    if (x === undefined || w1 === undefined || w2 === undefined || w3 === undefined) continue;
-
-    const z1 = zoneOf(w1);
-    const z2 = zoneOf(w2);
-    const z3 = zoneOf(w3);
-
-    const set = new Set<number>([...z1, ...z2, ...z3]);
-    const setNums = Array.from(set).sort((a, b) => a - b);
-    const setKey = setNums.join("-");
-
-    for (const tr of triggersFor(x)) {
-      const key = `${tr.id}|${setKey}`;
-      const prev = counts.get(key);
-      if (prev) prev.count += 1;
-      else
-        counts.set(key, {
-          triggerLabel: tr.label,
-          triggerKind: tr.kind,
-          triggerMembers: tr.members,
-          xExample: x,
-          count: 1,
-          setNums,
-          zones9: [...z1, ...z2, ...z3],
-        });
-    }
-  }
-
-  const repeated = Array.from(counts.values()).filter((p) => p.count > 1);
-  if (repeated.length === 0) return null;
-
-  const kindRank = (k: Pattern["triggerKind"]) => (k === "T" || k === "D" || k === "S" ? 0 : 1);
-
-  repeated.sort((a, b) => {
-    if (b.count !== a.count) return b.count - a.count;
-    const ca = a.setNums.length;
-    const cb = b.setNums.length;
-    if (ca !== cb) return ca - cb;
-    const ka = kindRank(a.triggerKind);
-    const kb = kindRank(b.triggerKind);
-    if (ka !== kb) return ka - kb;
-    return a.triggerLabel.localeCompare(b.triggerLabel);
-  });
-
-  return repeated[0];
-}, [history]);
-
-const selChipClass = (n: number) => selClass(sel, n);
-
-  const lastTen = history.slice(0, 10);
+  const calcDist = useMemo(() => {
+    if (distN1 === null || distN2 === null) return null;
+    
+    const idx1 = WHEEL_EU.indexOf(distN1);
+    const idx2 = WHEEL_EU.indexOf(distN2);
+    const L = WHEEL_EU.length;
+    
+    const h = (idx2 - idx1 + L) % L;
+    const ah = (idx1 - idx2 + L) % L;
+    
+    return { h, ah };
+  }, [distN1, distN2]);
 
   return (
     <div className="app">
-        {showEaster99 && (
-          <div className="easterOverlay" onClick={() => setShowEaster99(false)}>
-            <img src="/easter-99.gif" alt="Easter 99" />
-          </div>
-        )}
+      {showEaster99 && (
+        <div className="easterOverlay" onClick={() => setShowEaster99(false)}>
+          <img src="/easter-99.gif" alt="Easter 99" />
+        </div>
+      )}
+      
       <div className="panel topbar">
-        <label>Digite (vírgula):</label>
-        <div className="inputWrap">
-          <input
-            type="text"
-            placeholder="Ex: 1,24,36"
-            value={raw}
-            onChange={(e) => setRaw(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                onSend();
-              }
-            }}
-          />
+        <div className="topbarLine">
+          <div className="userGreeting">Olá, Cleber!</div>
+          <label>Digite (vírgula):</label>
+          <div className="inputWrap">
+            <input
+              type="text"
+              placeholder="Ex: 1,24,36"
+              value={raw}
+              onChange={(e) => setRaw(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onSend();
+                }
+              }}
+            />
+          </div>
+          <button className="btn btn-send" onClick={onSend}>ENVIAR</button>
+          <button className="btn btn-undo" onClick={onUndoLast}>APAGAR</button>
+          <button className="btn btn-reset" onClick={onResetAll}>RESET TOTAL</button>
+          <button className="btn btn-keyboard" onClick={openKeyboard} style={{ background: "#9333ea", color: "#fff" }}>
+            KEYBOARD
+          </button>
+          <button 
+            className="btn btn-contador" 
+            onClick={() => window.open('/contador', 'RouletteContador', 'width=1100,height=800')} 
+            style={{ background: "#f59e0b", color: "#fff" }}
+          >
+            CONTADOR
+          </button>
+          <button className="btn btn-strategies" onClick={openStrategies} style={{ background: "#22c55e", color: "#fff" }}>
+            ESTRATEGIAS
+          </button>
         </div>
 
-        <button className="btn btn-send" onClick={onSend}>ENVIAR</button>
-        <button className="btn btn-undo" onClick={onUndoLast}>APAGAR</button>
-        <button className="btn btn-colors" onClick={onResetColors} title="Limpa apenas seleções (azul/amarelo/verde)">
-          RESET DE CORES
-        </button>
-        
+        <div className="topbarLine secondary">
+          <button className="btn btn-colors" onClick={onResetColors} title="Limpa apenas seleções">
+            RESET DE CORES
+          </button>
 
-<div className="modeSelectWrap" title="Muda a função do seletor de cores">
-  <span className="modeLabel">MODO</span>
-  <select
-    className="modeSelect"
-    value={selMode}
-    onChange={(e) => setSelMode(e.target.value as SelMode)}
-    aria-label="Modo do seletor de cores"
-  >
-    <option value="neighbors">1 — Vizinhos</option>
-    <option value="terminalDisguised">2 — Disfarçados do Terminal</option>
-    <option value="sumDisguised">3 — Disfarçados da Soma</option>
-  </select>
-</div>
-<button className="btn btn-reset" onClick={onResetAll}>RESET</button>
+          <div className="colorPicker">
+            <span className="colorLabel">COR ATIVA:</span>
+            {SEL_ORDER.map((_, idx) => (
+              <div
+                key={idx}
+                className={`colorCircle activeC${idx + 1} ${sel.activeColorIndex === idx ? "active" : ""}`}
+                style={{ backgroundColor: `var(--selC${idx + 1})` }}
+                onClick={() => onColorChange(idx)}
+                title={`Cor ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          <div className="modeSelectWrap" title="Muda a função do seletor de cores">
+            <span className="modeLabel">MODO</span>
+            <select
+              className="modeSelect"
+              value={selMode}
+              onChange={(e) => setSelMode(e.target.value as SelMode)}
+              aria-label="Modo do seletor de cores"
+            >
+              <option value="neighbors">1 — Vizinhos</option>
+              <option value="unique">2 — Único</option>
+              <option value="terminalDisguised">3 — Disfarçados do Terminal</option>
+              <option value="sumDisguised">4 — Disfarçados da Soma</option>
+              <option value="newMarking">5 — Nova marcação</option>
+              <option value="zoneMarking">6 — Marcação de zona</option>
+            </select>
+          </div>
+
+          <div className="markingModeWrap" title="Alterna entre marcacao unica e acumulada">
+            <span className="markingLabel">MARCACAO</span>
+            <button
+              className={`markingBtn ${markingMode === "unique" ? "active" : ""}`}
+              onClick={() => setMarkingMode("unique")}
+              title="Cada clique limpa a cor anterior"
+            >
+              Unica
+            </button>
+            <button
+              className={`markingBtn ${markingMode === "cumulative" ? "active" : ""}`}
+              onClick={() => setMarkingMode("cumulative")}
+              title="Cliques acumulam na mesma cor"
+            >
+              Acumulada
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="panel lastStrip" aria-label="Últimos números (curto)">
-        {history.slice(0, SHORT_N).map((n, i) => (
+      <div className="panel lastStrip" aria-label="Últimos números">
+        {lastTen.map((n, idx) => (
           <div
-            key={`${n}-${i}`}
-            className={`chip ${colorOf(n)} ${selChipClass(n)}`}
+            key={idx}
+            className={`chip ${colorOf(n)}`}
+            style={getCellStyles(n)}
             onClick={() => onSelect(n)}
-            title="Clique para selecionar (não registra)"
+            title="Clique para selecionar"
           >
             {n}
           </div>
         ))}
       </div>
 
-
-
-      <div className="panel zoneStrip" aria-label="Padrão de zona (top)">
-        <div className="zoneTitle">Padrão de Zona (Top)</div>
-
-        {!topZonePattern ? (
-          <div className="zoneEmpty">Sem padrão repetido ainda (precisa de X + 3 giros depois, repetindo &gt; 1)</div>
-        ) : (
-          <div className="zoneWrap">
-            <div className="zoneHead">
-              <div
-                className={`chip chipBig ${colorOf(topZonePattern.xExample)} ${selChipClass(topZonePattern.xExample)}`}
-                onClick={() => onSelect(topZonePattern.xExample)}
-                title="X exemplo (clique seleciona)"
-              >
-                {topZonePattern.triggerKind === "T"
-                  ? topZonePattern.triggerLabel.replace("Terminal ", "")
-                  : topZonePattern.triggerKind === "D"
-                  ? topZonePattern.triggerLabel.replace("Disfarçado ", "")
-                  : topZonePattern.triggerKind === "S"
-                  ? topZonePattern.triggerLabel.replace("Seco ", "")
-                  : topZonePattern.xExample}
-              </div>
-
-              <div className="zoneMeta">
-                <div className="zoneCount">{topZonePattern.count}x</div>
-                <div className="zoneBadges">
-                  <span className="zb">{topZonePattern.triggerLabel}</span>
-                  {topZonePattern.triggerMembers.length > 1 && (
-                    <span className="zb">{topZonePattern.triggerMembers.join(", ")}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="zoneZones">
-              {[0, 3, 6].map((off) => (
-                <div key={off} className="zone3">
-                  {topZonePattern.zones9.slice(off, off + 3).map((n, idx) => (
-                    <div
-                      key={idx}
-                      className={`chip chipSmall ${colorOf(n)} ${selChipClass(n)}`}
-                      onClick={() => onSelect(n)}
-                      title="Número da zona (clique seleciona)"
-                    >
-                      {n}
-                    </div>
-                  ))}
+      {mergedNumbers.numbers.length > 0 && (
+        <div className="panel mergedStrip" style={{ marginTop: '10px', border: '2px solid #3b82f6', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '10px 15px' }}>
+            <span style={{ fontWeight: 'bold', color: '#3b82f6', whiteSpace: 'nowrap' }}>
+              MESCLADOS ({mergedNumbers.maxCount} MARCAÇÕES):
+            </span>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {mergedNumbers.numbers.map((n) => (
+                <div
+                  key={n}
+                  className={`chip ${colorOf(n)}`}
+                  style={{ ...getCellStyles(n), width: '35px', height: '35px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold', color: '#fff' }}
+                  onClick={() => onSelect(n)}
+                >
+                  {n}
                 </div>
               ))}
             </div>
           </div>
-        )}
-      </div>
-
+        </div>
+      )}
 
       <div className="main">
-        <div className="panel left">
-          <div className="sectionTitle">Histórico (100)</div>
-          <div className="longGrid" aria-label="Histórico longo">
-            {longGridItems.map((n, idx) => {
-              if (n === null) return <div key={idx} className="longCell empty" />;
-
-return (
-                <div
-                  key={idx}
-                  className={`longCell ${colorOf(n)} ${selChipClass(n)}`}
-                  onClick={() => onSelect(n)}
-                  title="Clique para selecionar (não registra)"
-                >
-                  {n}
+        <div className={`panel left ${minimized.history ? "minimized" : ""}`}>
+          <div className="panelHeader">
+            <div className="sectionTitle">Histórico (150)</div>
+            <button className="btn-min" onClick={() => toggleMin("history")}>{minimized.history ? "+" : "−"}</button>
+          </div>
+          {!minimized.history && (
+            <>
+              <div className="longGrid" aria-label="Histórico longo">
+                {longGridItems.map((n, idx) => {
+                  if (n === null) return <div key={idx} className="longCell empty" />;
+                  return (
+                    <div
+                      key={idx}
+                      className={`longCell ${colorOf(n)} ${disguisedPairIdx.has(idx) ? "historyPair" : ""}`}
+                      style={getCellStyles(n)}
+                      onClick={() => onSelect(n)}
+                      title="Clique para selecionar (não registra)"
+                    >
+                      {n}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="hint">
+                Entrada só pelo input. Clique em número seleciona N e vizinhos (ou outro modo) com a cor ativa.
+                A seleção substitui a cor do chip. "RESET DE CORES" limpa as marcações.
+              </div>
+            </>
+          )}
+        </div>
+        <div className="middleCols">
+          <div className={`panel-wrap ${minimized.neighbors ? "minimized" : ""}`}>
+            <NeighborsBlock 
+              history={lastTen} 
+              sel={sel} 
+              onPick={onSelect} 
+              onMarkStrategy={onMarkStrategy}
+              onlyIntersections={onlyIntersections}
+              onToggleIntersections={() => setOnlyIntersections(!onlyIntersections)}
+              isMinimized={minimized.neighbors}
+              onToggle={() => toggleMin("neighbors")}
+            />
+          </div>
+          <div className={`panel-wrap ${minimized.raceDist ? "minimized" : ""}`}>
+            <div className={`panel-wrap ${minimized.raceDist ? "minimized" : ""}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
+              <MovementPanel history={history} />
+              
+              {/* Calculador de Distância - Agora com botões de seleção */}
+              <div className={`panel distCalcInside ${pickingFor ? 'isPicking' : ''}`}>
+                <div className="distCalcTitle">
+                  {pickingFor ? `SELECIONE O NÚMERO PARA ${pickingFor.toUpperCase()} NA RACE...` : 'CALCULADORA DE CASAS'}
                 </div>
-              );
-            })}
-          </div>
-          <div className="hint">
-            Entrada só pelo input. Clique em número (histórico/race/mapa) seleciona N e vizinhos em camadas: Azul → Amarelo → Verde.
-            A seleção substitui a cor do chip. “RESET DE CORES” limpa somente seleções.
+                <div className="distCalcContent">
+                  <div className="distBtnGroup">
+                    <button 
+                      className={`distSelectBtn ${pickingFor === 'n1' ? 'active' : ''}`}
+                      onClick={() => setPickingFor(pickingFor === 'n1' ? null : 'n1')}
+                    >
+                      {distN1 !== null ? `N1: ${distN1}` : 'SEL. N1'}
+                    </button>
+                    <button 
+                      className={`distSelectBtn ${pickingFor === 'n2' ? 'active' : ''}`}
+                      onClick={() => setPickingFor(pickingFor === 'n2' ? null : 'n2')}
+                    >
+                      {distN2 !== null ? `N2: ${distN2}` : 'SEL. N2'}
+                    </button>
+                  </div>
+                  <div className="distResults">
+                    <div className="distItem">
+                      <span className="distLabel">H:</span>
+                      <span className="distValue">{calcDist ? calcDist.h : "--"}</span>
+                    </div>
+                    <div className="distItem">
+                      <span className="distLabel">AH:</span>
+                      <span className="distValue">{calcDist ? calcDist.ah : "--"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <NeighborsBlock history={lastTen} sel={sel} onPick={onSelect} />
+        <div className="rightCol">
+          <div className={`panel-wrap ${minimized.trackMap ? "minimized" : ""}`}>
+            <div className="panelHeader">
+              <div className="sectionTitle">Mapa da Mesa</div>
+              <button className="btn-min" onClick={() => toggleMin("trackMap")}>{minimized.trackMap ? "+" : "−"}</button>
+            </div>
+            {!minimized.trackMap && (
+              <TableMap sel={sel} onPick={onSelect} repHighlights={repHighlights} getCellStyles={getCellStyles} />
+            )}
+          </div>
 
-        <div className="panel right">
-          <RaceTrack sel={sel} onPick={onSelect} />
-          <TableMap sel={sel} rep={repHighlights} onPick={onSelect} />
+          <div className={`panel-wrap ${minimized.raceDist ? "minimized" : ""}`}>
+            <div className="panelHeader">
+              <div className="sectionTitle">RaceTrack</div>
+              <button className="btn-min" onClick={() => toggleMin("raceDist")}>{minimized.raceDist ? "+" : "−"}</button>
+            </div>
+            {!minimized.raceDist && (
+              <RaceTrack sel={sel} onPick={onSelect} getCellStyles={getCellStyles} />
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="panel terminals" aria-label="Terminais">
-        {terminals.map((t) => <TerminalCard key={t.d} s={t} />)}
+      <div className="bottomRow">
+        <div className={`panel ${minimized.terminals ? "minimized" : ""}`}>
+          <div className="panelHeader">
+            <div className="sectionTitle">Terminais</div>
+            <button className="btn-min" onClick={() => toggleMin("terminals")}>{minimized.terminals ? "+" : "−"}</button>
+          </div>
+          {!minimized.terminals && (
+            <div className="terminalsGrid">
+              {terminals.map((t) => (
+                <TerminalCard key={t.d} s={t} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={`panel ${minimized.reps ? "minimized" : ""}`}>
+          <div className="panelHeader">
+            <div className="sectionTitle">Métricas</div>
+            <button className="btn-min" onClick={() => toggleMin("reps")}>{minimized.reps ? "+" : "−"}</button>
+          </div>
+          {!minimized.reps && (
+            <div className="metricsGrid">
+              <Metric title="Vermelhos" value={streaks.color.key === "red" ? streaks.color.count : 0} />
+              <Metric title="Pretos" value={streaks.color.key === "black" ? streaks.color.count : 0} />
+              <Metric title="Pares" value={streaks.parity.key === "even" ? streaks.parity.count : 0} />
+              <Metric title="Ímpares" value={streaks.parity.key === "odd" ? streaks.parity.count : 0} />
+              <Metric title="1-18" value={streaks.half.key === "low" ? streaks.half.count : 0} />
+              <Metric title="19-36" value={streaks.half.key === "high" ? streaks.half.count : 0} />
+            </div>
+          )}
+        </div>
+
+        <div className={`panel ${minimized.zone ? "minimized" : ""}`}>
+          <div className="panelHeader">
+            <div className="sectionTitle">Zona do Último</div>
+            <button className="btn-min" onClick={() => toggleMin("zone")}>{minimized.zone ? "+" : "−"}</button>
+          </div>
+          {!minimized.zone && topZonePattern && (
+            <div className="zonePattern">
+              <div>Último: {topZonePattern.xExample}</div>
+              <div>Frequência: {topZonePattern.count}</div>
+            </div>
+          )}
+        </div>
       </div>
-
-      <div className="panel reps" aria-label="Repetições">
-        <Metric title="VERMELHO" value={streaks.color.key === "red" ? streaks.color.count : null} />
-        <Metric title="PRETO" value={streaks.color.key === "black" ? streaks.color.count : null} />
-
-        <Metric title="PAR" value={streaks.parity.key === "even" ? streaks.parity.count : null} />
-        <Metric title="ÍMPAR" value={streaks.parity.key === "odd" ? streaks.parity.count : null} />
-
-        <Metric title="BAIXO" value={streaks.half.key === "low" ? streaks.half.count : null} />
-        <Metric title="ALTO" value={streaks.half.key === "high" ? streaks.half.count : null} />
-
-        <Metric title="COL 1" value={streaks.column.key === 1 ? streaks.column.count : null} />
-        <Metric title="COL 2" value={streaks.column.key === 2 ? streaks.column.count : null} />
-        <Metric title="COL 3" value={streaks.column.key === 3 ? streaks.column.count : null} />
-
-        <Metric title="1ª DUZ" value={streaks.dozen.key === 1 ? streaks.dozen.count : null} />
-        <Metric title="2ª DUZ" value={streaks.dozen.key === 2 ? streaks.dozen.count : null} />
-        <Metric title="3ª DUZ" value={streaks.dozen.key === 3 ? streaks.dozen.count : null} />
-      </div>
-{showColorPrompt && (
-  <div className="modalOverlay" role="dialog" aria-modal="true" aria-label="Aviso de cores">
-    <div className="modal">
-      <div className="modalTitle">FOI USADO 20 CORES</div>
-      <div className="modalText">DESEJA RESETAR AS CORES?</div>
-      <div className="modalActions">
-        <button className="btn btn-secondary" onClick={() => setShowColorPrompt(false)}>CONTINUAR</button>
-        <button className="btn btn-colors" onClick={onResetColors}>RESETAR CORES</button>
-      </div>
-    </div>
-  </div>
-)}
-
-      <div className="versionBadge">v2.1.0</div>
     </div>
   );
 }
