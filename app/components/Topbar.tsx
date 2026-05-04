@@ -10,29 +10,61 @@ export default function Topbar() {
   const path = usePathname();
   const router = useRouter();
 
+  const isActive = (href: string) => path === href;
+
   return (
-    <div className="topbar">
-      <div className="brand">
-        <div className="dot" />
-        <div className="title">Roleta</div>
-        {user ? <span className="pill">{user.role.toUpperCase()}</span> : null}
+    <div className="topbarNav">
+      <div className="topbarBrand">
+        <div className="brandDot" />
+        <div className="brandTitle">ROLETA</div>
+        {user && <span className="brandBadge">{user.role.toUpperCase()}</span>}
       </div>
 
-      <div className="actions">
-        <Link className={"btn" + (path === "/app" ? " active" : "")} href="/app">Sistema</Link>
-        <Link className={"btn" + (path === "/profile" ? " active" : "")} href="/profile">Perfil</Link>
-        {user?.role === "admin" ? (
-          <Link className={"btn" + (path === "/admin/users" ? " active" : "")} href="/admin/users">Usuários</Link>
-        ) : null}
+      <nav className="topbarMenu">
+        <Link 
+          className={`navLink ${isActive("/app") ? "active" : ""}`} 
+          href="/app"
+          title="Ir para o sistema de roleta"
+        >
+          <span className="navIcon">🎰</span>
+          <span className="navText">Sistema</span>
+        </Link>
+
+        <Link 
+          className={`navLink ${isActive("/profile") ? "active" : ""}`} 
+          href="/profile"
+          title="Acessar seu perfil"
+        >
+          <span className="navIcon">👤</span>
+          <span className="navText">Perfil</span>
+        </Link>
+
+        {user?.role === "admin" && (
+          <Link 
+            className={`navLink ${isActive("/admin/users") ? "active" : ""}`} 
+            href="/admin/users"
+            title="Gerenciar usuários"
+          >
+            <span className="navIcon">⚙️</span>
+            <span className="navText">Usuários</span>
+          </Link>
+        )}
+
         <button
-          className="btn danger"
+          className="navLink navLogout"
           onClick={() => {
             logout();
             router.replace("/login");
           }}
+          title="Sair do sistema"
         >
-          Sair
+          <span className="navIcon">🚪</span>
+          <span className="navText">Sair</span>
         </button>
+      </nav>
+
+      <div className="topbarUser">
+        {user && <span className="userInfo">Olá, {user.name}</span>}
       </div>
     </div>
   );
