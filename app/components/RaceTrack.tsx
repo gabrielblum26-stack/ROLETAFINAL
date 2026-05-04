@@ -1,110 +1,164 @@
 "use client";
 
+import React from "react";
 import { WHEEL_EU, colorOf } from "../lib/roulette";
 import type { SelState } from "../lib/selection";
-import { selClass } from "../lib/selection";
+import { getNumberColors } from "../lib/selection";
 
-type Pt = { x: number; y: number };
+type Pt = { x: number; y: number; angle: number; n: number };
 
-function buildTrackPoints(count: number): Pt[] {
-  // Racetrack path: top straight -> right arc -> bottom straight -> left arc
+function buildTrackPoints(): Pt[] {
   const W = 900;
-  const H = 200;
-  const padX = 46;
-  const padY = 44;
+  const H = 240;
+  const r = 90; 
+  const paddingX = 80;
+  const straightLen = W - 2 * paddingX - 2 * r;
+  
+  const leftX = paddingX + r;
+  const rightX = W - paddingX - r;
+  const topY = (H / 2) - r;
+  const bottomY = (H / 2) + r;
+  const midY = H / 2;
 
-  const r = 60; // raio das curvas (meia-lua)
-  const left = padX;
-  const right = W - padX;
-  const top = padY;
-  const bottom = H - padY;
-
-  const straightLen = (right - left) - 2 * r;
-  const arcLen = Math.PI * r; // meia circunferência
+  const arcLen = Math.PI * r;
   const totalLen = 2 * straightLen + 2 * arcLen;
-  const step = totalLen / count;
+  const step = totalLen / WHEEL_EU.length;
 
-  const midY = (top + bottom) / 2;
+  const offset = (arcLen / 2) + step;
 
-  function pointAt(s: number): Pt {
-    // 1) topo (esq->dir)
-    if (s <= straightLen) return { x: left + r + s, y: top };
-    s -= straightLen;
+  function pointAt(index: number): Pt {
+    let s = (offset + (index * step)) % totalLen;
+    const n = WHEEL_EU[index];
 
-    // 2) curva direita (topo->baixo)
     if (s <= arcLen) {
       const t = s / arcLen;
       const ang = (-Math.PI / 2) + t * Math.PI;
-      return { x: right - r + r * Math.cos(ang), y: midY + r * Math.sin(ang) };
+      return { x: rightX + r * Math.cos(ang), y: midY + r * Math.sin(ang), angle: ang, n };
     }
     s -= arcLen;
 
-    // 3) baixo (dir->esq)
-    if (s <= straightLen) return { x: right - r - s, y: bottom };
+    if (s <= straightLen) {
+      return { x: rightX - s, y: bottomY, angle: Math.PI / 2, n };
+    }
     s -= straightLen;
 
-    // 4) curva esquerda (baixo->topo)
-    const t = s / arcLen;
-    const ang = (Math.PI / 2) + t * Math.PI;
-    return { x: left + r + r * Math.cos(ang), y: midY + r * Math.sin(ang) };
+    if (s <= arcLen) {
+      const t = s / arcLen;
+      const ang = (Math.PI / 2) + t * Math.PI;
+      return { x: leftX + r * Math.cos(ang), y: midY + r * Math.sin(ang), angle: ang, n };
+    }
+    s -= arcLen;
+
+    return { x: leftX + s, y: topY, angle: -Math.PI / 2, n };
   }
 
   const pts: Pt[] = [];
-  for (let i = 0; i < count; i++) pts.push(pointAt(i * step));
+  for (let i = 0; i < WHEEL_EU.length; i++) {
+    pts.push(pointAt(i));
+  }
   return pts;
 }
 
-function selectionFill(scls: string) {
-  if (scls === "selGreen") return "var(--selGreen)";
-  if (scls === "selYellow") return "var(--selYellow)";
-  if (scls === "selBlue") return "var(--selBlue)";
-  return null;
+function selectionFill(sel: SelState, n: number) {
+  const colors = getNumberColors(sel, n);
+  if (colors.length === 0) return null;
+  if (colors.length === 1) return colors[0];
+  return `url(#grad-race-${n})`;
 }
 
-export default function RaceTrack({ sel, onPick }: { sel: SelState; onPick: (n: number) => void }) {
-  const W = 900;
-  const H = 200;
-  const chipR = 15;
-  const pts = buildTrackPoints(WHEEL_EU.length);
+type Props = {
+  sel: SelState;
+  onPick: (n: number) => void;
+  getCellStyles: (n: number) => React.CSSProperties;
+};
+
+export default function RaceTrack({
+  sel,
+  onPick,
+  getCellStyles
+}: Props) {
+  const pts = buildTrackPoints();
+  const viewW = 900;
+  const viewH = 240;
 
   return (
-    <div className="raceBox" aria-label="Race (racetrack real) — seleção">
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" role="img">
+    <div className="raceBox" aria-label="Race Profissional">
+      <svg viewBox={`0 0 ${viewW} ${viewH}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
         <defs>
-          <filter id="raceShadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="rgba(0,0,0,.22)" />
-          </filter>
-          <linearGradient id="trackGrad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="rgba(0,0,0,.14)" />
-            <stop offset="1" stopColor="rgba(0,0,0,.08)" />
-          </linearGradient>
+          {WHEEL_EU.map(n => {
+            const colors = getNumberColors(sel, n);
+            if (colors.length <= 1) return null;
+            const step = 100 / colors.length;
+            return (
+              <linearGradient id={`grad-race-${n}`} key={n} x1="0%" y1="0%" x2="100%" y2="100%">
+                {colors.map((c, idx) => (
+                  <React.Fragment key={idx}>
+                    <stop offset={`${idx * step}%`} stopColor={c} />
+                    <stop offset={`${(idx + 1) * step}%`} stopColor={c} />
+                  </React.Fragment>
+                ))}
+              </linearGradient>
+            );
+          })}
         </defs>
 
-        {/* Pista: anel (cara de racetrack) */}
-        <rect x="16" y="24" width={W - 32} height={H - 48} rx="76" fill="url(#trackGrad)" stroke="rgba(0,0,0,.22)" strokeWidth="2" />
-        <rect x="62" y="52" width={W - 124} height={H - 104} rx="56" fill="rgba(240,240,240,.62)" stroke="rgba(0,0,0,.16)" strokeWidth="2" />
+        <path
+          d="M 170,30 L 730,30 A 90,90 0 0 1 730,210 L 170,210 A 90,90 0 0 1 170,30 Z"
+          fill="rgba(0,0,0,0.8)"
+          stroke="rgba(255,255,255,0.3)"
+          strokeWidth="2"
+        />
 
-        {/* “faixas” (pinta cara de pista) */}
-        <rect x="50" y="40" width={W - 100} height="10" rx="5" fill="rgba(255,255,255,.45)" opacity="0.7" />
-        <rect x="50" y={H - 50} width={W - 100} height="10" rx="5" fill="rgba(255,255,255,.45)" opacity="0.7" />
+        <path
+          d="M 170,75 L 730,75 A 45,45 0 0 1 730,165 L 170,165 A 45,45 0 0 1 170,75 Z"
+          fill="none"
+          stroke="rgba(255,255,255,0.3)"
+          strokeWidth="2"
+        />
 
-        {/* “casinhas” + chips */}
-        {WHEEL_EU.map((n, i) => {
-          const p = pts[i];
+        <line x1="280" y1="75" x2="360" y2="165" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+        <line x1="480" y1="75" x2="480" y2="165" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+        <path d="M 680,75 Q 740,120 680,165" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+
+        <text x="230" y="125" textAnchor="middle" fontSize="16" fontWeight="bold" fill="rgba(255,255,255,0.7)">TIER</text>
+        <text x="410" y="125" textAnchor="middle" fontSize="16" fontWeight="bold" fill="rgba(255,255,255,0.7)">ORPHELINS</text>
+        <text x="580" y="125" textAnchor="middle" fontSize="16" fontWeight="bold" fill="rgba(255,255,255,0.7)">VOISINS</text>
+        <text x="750" y="125" textAnchor="middle" fontSize="16" fontWeight="bold" fill="rgba(255,255,255,0.7)">ZERO</text>
+
+        {pts.map((p) => {
+          const n = p.n;
           const base = colorOf(n);
-          const scls = selClass(sel, n);
-          const override = selectionFill(scls);
+          const override = selectionFill(sel, n);
           const fill = override ?? `var(--${base})`;
-          const textFill = scls === "selYellow" ? "#111" : "#fff";
-
+          const customStyles = getCellStyles(n);
+          
           return (
-            <g key={n} onClick={() => onPick(n)} style={{ cursor: "pointer" }} filter="url(#raceShadow)">
-              <rect x={p.x - 21} y={p.y - 18} width="42" height="36" rx="10" fill="rgba(255,255,255,.12)" stroke="rgba(0,0,0,.10)" />
-              <circle cx={p.x} cy={p.y} r={chipR} fill={fill} stroke="rgba(255,255,255,.35)" strokeWidth="2" />
-              <text x={p.x} y={p.y + 5} textAnchor="middle" fontSize="12" fontWeight="900" fill={textFill}>
+            <g 
+              key={n} 
+              onClick={() => onPick(n)} 
+              style={{ cursor: "pointer", ...customStyles }}
+              className="raceNode"
+            >
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r="18"
+                fill={fill}
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="1"
+                className="raceCell"
+              />
+              <text 
+                x={p.x} 
+                y={p.y + 5} 
+                textAnchor="middle" 
+                fontSize="14" 
+                fontWeight="bold" 
+                fill="#fff"
+                style={{ userSelect: 'none' }}
+              >
                 {n}
               </text>
-              <title>Selecionar {n} e vizinhos</title>
             </g>
           );
         })}
