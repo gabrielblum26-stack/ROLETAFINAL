@@ -425,7 +425,7 @@ export default function Page() {
         </div>
 
         <div className="middleCols">
-          <div className={`panel-wrap ${minimized.neighbors ? "minimized" : ""}`}>
+          <div className="strategiesWrap">
             <NeighborsBlock 
               history={lastTen} 
               sel={sel} 
@@ -437,40 +437,18 @@ export default function Page() {
               onToggle={() => toggleMin("neighbors")}
             />
           </div>
-          <div className={`panel-wrap ${minimized.raceDist ? "minimized" : ""}`}>
-            <div className={`panel-wrap ${minimized.raceDist ? "minimized" : ""}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
-              <MovementPanel history={history} />
-              
-              {/* Calculador de Distância - Agora com botões de seleção */}
-              <div className={`panel distCalcInside ${pickingFor ? 'isPicking' : ''}`}>
-                <div className="distCalcTitle">
-                  {pickingFor ? `SELECIONE O NÚMERO PARA ${pickingFor.toUpperCase()} NA RACE...` : 'CALCULADORA DE CASAS'}
+          <div className="movementWrap">
+            <MovementPanel history={history} />
+            <div className={`panel distCalcInside ${pickingFor ? 'isPicking' : ''}`}>
+              <div className="distCalcTitle">CALCULADORA DE CASAS</div>
+              <div className="distCalcContent">
+                <div className="distBtnGroup">
+                  <button className={`distSelectBtn ${pickingFor === 'n1' ? 'active' : ''}`} onClick={() => setPickingFor(pickingFor === 'n1' ? null : 'n1')}>{distN1 !== null ? `N1: ${distN1}` : 'SEL. N1'}</button>
+                  <button className={`distSelectBtn ${pickingFor === 'n2' ? 'active' : ''}`} onClick={() => setPickingFor(pickingFor === 'n2' ? null : 'n2')}>{distN2 !== null ? `N2: ${distN2}` : 'SEL. N2'}</button>
                 </div>
-                <div className="distCalcContent">
-                  <div className="distBtnGroup">
-                    <button 
-                      className={`distSelectBtn ${pickingFor === 'n1' ? 'active' : ''}`}
-                      onClick={() => setPickingFor(pickingFor === 'n1' ? null : 'n1')}
-                    >
-                      {distN1 !== null ? `N1: ${distN1}` : 'SEL. N1'}
-                    </button>
-                    <button 
-                      className={`distSelectBtn ${pickingFor === 'n2' ? 'active' : ''}`}
-                      onClick={() => setPickingFor(pickingFor === 'n2' ? null : 'n2')}
-                    >
-                      {distN2 !== null ? `N2: ${distN2}` : 'SEL. N2'}
-                    </button>
-                  </div>
-                  <div className="distResults">
-                    <div className="distItem">
-                      <span className="distLabel">H:</span>
-                      <span className="distValue">{calcDist ? calcDist.h : "--"}</span>
-                    </div>
-                    <div className="distItem">
-                      <span className="distLabel">AH:</span>
-                      <span className="distValue">{calcDist ? calcDist.ah : "--"}</span>
-                    </div>
-                  </div>
+                <div className="distResults">
+                  <div className="distItem"><span className="distLabel">H:</span><span className="distValue">{calcDist ? calcDist.h : "--"}</span></div>
+                  <div className="distItem"><span className="distLabel">AH:</span><span className="distValue">{calcDist ? calcDist.ah : "--"}</span></div>
                 </div>
               </div>
             </div>

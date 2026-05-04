@@ -11,10 +11,8 @@ export default function RootPage() {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        // Se estiver logado, vai para o app
         router.replace("/app");
       } else {
-        // Se não estiver logado, vai para o login
         router.replace("/login");
       }
     }

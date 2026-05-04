@@ -1022,6 +1022,20 @@ input[type="text"]{
 
 .middleCols {
   display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.strategiesWrap {
+  flex: 1.2;
+  min-width: 0;
+}
+
+.movementWrap {
+  flex: 0.8;
+  display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
