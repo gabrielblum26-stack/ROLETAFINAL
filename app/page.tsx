@@ -28,10 +28,6 @@ export default function Page() {
   const [distN1, setDistN1] = useState<number | null>(null);
   const [distN2, setDistN2] = useState<number | null>(null);
   const [pickingFor, setPickingFor] = useState<"n1" | "n2" | null>(null);
-  
-  // Estados para a calculadora expandida
-  const [calcValue, setCalcValue] = useState<string>("");
-  const [selectedNum, setSelectedNum] = useState<number | null>(null);
 
   // Estados para minimizar blocos
   const [minimized, setMinimized] = useState({
@@ -269,33 +265,7 @@ export default function Page() {
     return { h, ah };
   }, [distN1, distN2]);
 
-  // Lógica da calculadora expandida
-  const calcExpandedResults = useMemo(() => {
-    if (!selectedNum && calcValue === "") return null;
-    const num = selectedNum !== null ? selectedNum : (calcValue ? parseInt(calcValue) : null);
-    if (num === null || isNaN(num) || num < 0 || num > 36) return null;
 
-    const idx = WHEEL_EU.indexOf(num);
-    if (idx < 0) return null;
-
-    const L = WHEEL_EU.length;
-    
-    // ESQ + X (H e AH)
-    const esqH = (idx - 1 + L) % L;
-    const esqA = (idx + 1) % L;
-    
-    // DIR + X (H e AH)
-    const dirH = (idx + 1) % L;
-    const dirA = (idx - 1 + L) % L;
-
-    return {
-      num,
-      esqH: WHEEL_EU[esqH],
-      esqA: WHEEL_EU[esqA],
-      dirH: WHEEL_EU[dirH],
-      dirA: WHEEL_EU[dirA]
-    };
-  }, [selectedNum, calcValue]);
 
   return (
     <div className="app">
@@ -513,51 +483,7 @@ export default function Page() {
                 </div>
               </div>
 
-              {/* Calculador de Casas Expandido */}
-              <div className="panel distCalcExpanded">
-                <div className="distCalcTitle">CALCULADORA EXPANDIDA</div>
-                <div className="distCalcContent">
-                  <div className="calcInputRow">
-                    <label className="calcLabel">VALOR X:</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="36"
-                      value={calcValue}
-                      onChange={(e) => {
-                        setCalcValue(e.target.value);
-                        setSelectedNum(null);
-                      }}
-                      placeholder="Digite 0-36"
-                      className="calcInput"
-                    />
-                    <span className="calcDisplay">{selectedNum !== null ? selectedNum : calcValue || "-"}</span>
-                  </div>
 
-                  {calcExpandedResults && (
-                    <div className="expandedResults">
-                      <div className="expandedRow">
-                        <div className="expandedCell">
-                          <span className="expandedLabel">ESQ + X (H)</span>
-                          <span className="expandedValue">{calcExpandedResults.esqH}</span>
-                        </div>
-                        <div className="expandedCell">
-                          <span className="expandedLabel">ESQ + X (A)</span>
-                          <span className="expandedValue">{calcExpandedResults.esqA}</span>
-                        </div>
-                        <div className="expandedCell">
-                          <span className="expandedLabel">DIR + X (H)</span>
-                          <span className="expandedValue">{calcExpandedResults.dirH}</span>
-                        </div>
-                        <div className="expandedCell">
-                          <span className="expandedLabel">DIR + X (A)</span>
-                          <span className="expandedValue">{calcExpandedResults.dirA}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>

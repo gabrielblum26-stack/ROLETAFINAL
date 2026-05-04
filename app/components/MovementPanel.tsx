@@ -29,10 +29,6 @@ export default function MovementPanel({
   const [mode, setMode] = useState<DistanceMode>("shortest");
   const [activeMarkColor, setActiveMarkColor] = useState<number>(0);
   const [marks, setMarks] = useState<Record<string, string>>({});
-  
-  // Estados para a calculadora expandida
-  const [calcValue, setCalcValue] = useState<string>("");
-  const [selectedNum, setSelectedNum] = useState<number | null>(null);
 
   const movements: MovementRecord[] = [];
   for (let i = 0; i < Math.min(history.length - 1, 100); i++) {
@@ -80,34 +76,6 @@ export default function MovementPanel({
       return next;
     });
   };
-
-  // Lógica da calculadora expandida
-  const calcExpandedResults = (() => {
-    if (!selectedNum && calcValue === "") return null;
-    const num = selectedNum !== null ? selectedNum : (calcValue ? parseInt(calcValue) : null);
-    if (num === null || isNaN(num) || num < 0 || num > 36) return null;
-
-    const idx = WHEEL_EU.indexOf(num);
-    if (idx < 0) return null;
-
-    const L = WHEEL_EU.length;
-    
-    // ESQ + X (H e AH)
-    const esqH = (idx - 1 + L) % L;
-    const esqA = (idx + 1) % L;
-    
-    // DIR + X (H e AH)
-    const dirH = (idx + 1) % L;
-    const dirA = (idx - 1 + L) % L;
-
-    return {
-      num,
-      esqH: WHEEL_EU[esqH],
-      esqA: WHEEL_EU[esqA],
-      dirH: WHEEL_EU[dirH],
-      dirA: WHEEL_EU[dirA]
-    };
-  })();
 
   return (
     <div className="movementPanel compact">
@@ -199,52 +167,6 @@ export default function MovementPanel({
         )}
       </div>
 
-      {/* CALCULADORA EXPANDIDA - Dentro do painel DESLOCAMENTO */}
-      <div className="expandedCalcSection">
-        <div className="expandedCalcTitle">CALCULADORA DE CASAS</div>
-        <div className="expandedCalcContent">
-          <div className="calcInputRow">
-            <label className="calcLabel">VALOR X:</label>
-            <input
-              type="number"
-              min="0"
-              max="36"
-              value={calcValue}
-              onChange={(e) => {
-                setCalcValue(e.target.value);
-                setSelectedNum(null);
-              }}
-              placeholder=""
-              className="calcInput"
-            />
-            <span className="calcDisplay">{selectedNum !== null ? selectedNum : calcValue || "--"}</span>
-          </div>
-
-          {calcExpandedResults && (
-            <div className="expandedResults">
-              <div className="expandedRow">
-                <div className="expandedCell">
-                  <span className="expandedLabel">ESQ + X (H)</span>
-                  <span className="expandedValue">{calcExpandedResults.esqH}</span>
-                </div>
-                <div className="expandedCell">
-                  <span className="expandedLabel">ESQ + X (A)</span>
-                  <span className="expandedValue">{calcExpandedResults.esqA}</span>
-                </div>
-                <div className="expandedCell">
-                  <span className="expandedLabel">DIR + X (H)</span>
-                  <span className="expandedValue">{calcExpandedResults.dirH}</span>
-                </div>
-                <div className="expandedCell">
-                  <span className="expandedLabel">DIR + X (A)</span>
-                  <span className="expandedValue">{calcExpandedResults.dirA}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
       <style jsx>{`
         .movementPanel.compact { padding: 8px; }
         .movementTitle { font-size: 11px; font-weight: 900; color: #888; }
@@ -264,83 +186,6 @@ export default function MovementPanel({
         .gridCellDist { font-size: 8px; }
         .modeBtn { padding: 2px 6px; font-size: 9px; }
         .btn-reset-marks { padding: 2px 6px; font-size: 9px; }
-        
-        /* CALCULADORA EXPANDIDA */
-        .expandedCalcSection {
-          border-top: 1px solid rgba(255,255,255,0.1);
-          padding-top: 8px;
-          margin-top: 8px;
-        }
-        .expandedCalcTitle {
-          font-size: 10px;
-          font-weight: 900;
-          color: #888;
-          margin-bottom: 6px;
-        }
-        .expandedCalcContent {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .calcInputRow {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .calcLabel {
-          font-size: 10px;
-          font-weight: 700;
-          color: #aaa;
-          min-width: 55px;
-        }
-        .calcInput {
-          width: 70px;
-          padding: 4px 6px;
-          border: 1px solid #444;
-          background: #1a1a1a;
-          color: #fff;
-          border-radius: 3px;
-          font-size: 11px;
-        }
-        .calcDisplay {
-          font-size: 12px;
-          font-weight: bold;
-          color: #ffd000;
-          min-width: 20px;
-          text-align: right;
-        }
-        .expandedResults {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .expandedRow {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 4px;
-        }
-        .expandedCell {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 5px;
-          background: rgba(255,255,255,0.05);
-          border-radius: 3px;
-          border: 1px solid rgba(255,255,255,0.1);
-        }
-        .expandedLabel {
-          font-size: 7px;
-          color: #888;
-          font-weight: 700;
-          margin-bottom: 2px;
-          text-align: center;
-          line-height: 1;
-        }
-        .expandedValue {
-          font-size: 12px;
-          font-weight: bold;
-          color: #26d07c;
-        }
       `}</style>
     </div>
   );
