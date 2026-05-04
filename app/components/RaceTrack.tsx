@@ -142,7 +142,7 @@ export default function RaceTrack({
               <circle
                 cx={p.x}
                 cy={p.y}
-                r="18"
+                r="22"
                 fill={fill}
                 stroke="rgba(255,255,255,0.2)"
                 strokeWidth="1"
@@ -152,7 +152,7 @@ export default function RaceTrack({
                 x={p.x} 
                 y={p.y + 5} 
                 textAnchor="middle" 
-                fontSize="14" 
+                fontSize="17" 
                 fontWeight="bold" 
                 fill="#fff"
                 style={{ userSelect: 'none' }}

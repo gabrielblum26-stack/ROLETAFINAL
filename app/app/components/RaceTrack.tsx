@@ -8,10 +8,10 @@ import { getNumberColors } from "../lib/selection";
 type Pt = { x: number; y: number; angle: number; n: number };
 
 function buildTrackPoints(): Pt[] {
-  const W = 900;
-  const H = 240;
-  const r = 90; 
-  const paddingX = 80;
+  const W = 1100;
+  const H = 300;
+  const r = 110; 
+  const paddingX = 60;
   const straightLen = W - 2 * paddingX - 2 * r;
   
   const leftX = paddingX + r;
@@ -78,8 +78,8 @@ export default function RaceTrack({
   getCellStyles
 }: Props) {
   const pts = buildTrackPoints();
-  const viewW = 900;
-  const viewH = 240;
+  const viewW = 1100;
+  const viewH = 300;
 
   return (
     <div className="raceBox" aria-label="Race Profissional">
@@ -103,27 +103,27 @@ export default function RaceTrack({
         </defs>
 
         <path
-          d="M 170,30 L 730,30 A 90,90 0 0 1 730,210 L 170,210 A 90,90 0 0 1 170,30 Z"
+          d="M 170,40 L 930,40 A 110,110 0 0 1 930,260 L 170,260 A 110,110 0 0 1 170,40 Z"
           fill="rgba(0,0,0,0.8)"
           stroke="rgba(255,255,255,0.3)"
           strokeWidth="2"
         />
 
         <path
-          d="M 170,75 L 730,75 A 45,45 0 0 1 730,165 L 170,165 A 45,45 0 0 1 170,75 Z"
+          d="M 170,95 L 930,95 A 55,55 0 0 1 930,205 L 170,205 A 55,55 0 0 1 170,95 Z"
           fill="none"
           stroke="rgba(255,255,255,0.3)"
           strokeWidth="2"
         />
 
-        <line x1="280" y1="75" x2="360" y2="165" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
-        <line x1="480" y1="75" x2="480" y2="165" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
-        <path d="M 680,75 Q 740,120 680,165" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+        <line x1="320" y1="95" x2="420" y2="205" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+        <line x1="550" y1="95" x2="550" y2="205" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+        <path d="M 850,95 Q 920,150 850,205" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
 
-        <text x="230" y="125" textAnchor="middle" fontSize="16" fontWeight="bold" fill="rgba(255,255,255,0.7)">TIER</text>
-        <text x="410" y="125" textAnchor="middle" fontSize="16" fontWeight="bold" fill="rgba(255,255,255,0.7)">ORPHELINS</text>
-        <text x="580" y="125" textAnchor="middle" fontSize="16" fontWeight="bold" fill="rgba(255,255,255,0.7)">VOISINS</text>
-        <text x="750" y="125" textAnchor="middle" fontSize="16" fontWeight="bold" fill="rgba(255,255,255,0.7)">ZERO</text>
+        <text x="250" y="155" textAnchor="middle" fontSize="20" fontWeight="bold" fill="rgba(255,255,255,0.7)">TIER</text>
+        <text x="480" y="155" textAnchor="middle" fontSize="20" fontWeight="bold" fill="rgba(255,255,255,0.7)">ORPHELINS</text>
+        <text x="700" y="155" textAnchor="middle" fontSize="20" fontWeight="bold" fill="rgba(255,255,255,0.7)">VOISINS</text>
+        <text x="950" y="155" textAnchor="middle" fontSize="20" fontWeight="bold" fill="rgba(255,255,255,0.7)">ZERO</text>
 
         {pts.map((p) => {
           const n = p.n;
@@ -142,7 +142,7 @@ export default function RaceTrack({
               <circle
                 cx={p.x}
                 cy={p.y}
-                r="18"
+                r="22"
                 fill={fill}
                 stroke="rgba(255,255,255,0.2)"
                 strokeWidth="1"
@@ -152,7 +152,7 @@ export default function RaceTrack({
                 x={p.x} 
                 y={p.y + 5} 
                 textAnchor="middle" 
-                fontSize="14" 
+                fontSize="17" 
                 fontWeight="bold" 
                 fill="#fff"
                 style={{ userSelect: 'none' }}

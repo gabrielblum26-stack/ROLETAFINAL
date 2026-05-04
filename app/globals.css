@@ -600,6 +600,23 @@ input[type="text"]{
   width: 100%;
   height: auto;
   display: block;
+  overflow: visible;
+}
+
+.raceNode {
+  transition: transform 0.2s ease-out;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.raceNode:hover {
+  transform: scale(1.5);
+  filter: brightness(1.2);
+  z-index: 100;
+}
+
+.raceCell {
+  transition: all 0.2s ease-out;
 }
 
 .bet{
