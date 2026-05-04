@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "./state/AuthProvider";
 import { colorOf, parseInput, neighborsEU, WHEEL_EU } from "./lib/roulette";
 import { initSel, applyClick, selClass, SelMode, setActiveColor, SEL_ORDER, markMultiple, getNumberColors } from "./lib/selection";
 import RaceTrack from "./components/RaceTrack";
@@ -16,7 +18,23 @@ const SHORT_N = 20;
 const LONG_N = 150;
 
 export default function Page() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [raw, setRaw] = useState("");
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/login");
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading || !user) {
+    return (
+      <div style={{ background: "#121212", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#ffd000", fontWeight: "bold" }}>
+        CARREGANDO...
+      </div>
+    );
+  }
   const [history, setHistory] = useState<number[]>([]);
   const [sel, setSel] = useState(initSel());
   const [selMode, setSelMode] = useState<SelMode>("neighbors");
