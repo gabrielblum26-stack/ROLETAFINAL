@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { wheelDistance, WHEEL_EU } from "../lib/roulette";
+import { wheelDistance, WHEEL_EU, wheelStepEU } from "../lib/roulette";
 
 export type MovementRecord = {
   from: number;
@@ -40,31 +40,26 @@ export default function MovementPanel({
   }
 
   const lastMovement = movements.length > 0 ? movements[0] : null;
-  const prevMovement = movements.length > 1 ? movements[1] : null;
 
   let lastDistance = 0;
   let lastDirection = "";
   let lastIsH = false;
-  let sumDist = 0;
-  let sumLeftNum = -1;
-  let sumRightNum = -1;
+  let targetHorario = -1;
+  let targetAntiHorario = -1;
 
   if (lastMovement) {
     lastIsH = lastMovement.h <= lastMovement.ah;
     lastDistance = lastIsH ? lastMovement.h : lastMovement.ah;
     lastDirection = lastIsH ? "H" : "A";
 
-    const currentIdx = WHEEL_EU.indexOf(lastMovement.to);
-    if (currentIdx >= 0) {
-      const L = WHEEL_EU.length;
-      if (prevMovement) {
-        const prevIsH = mode === "shortest" ? prevMovement.h <= prevMovement.ah : prevMovement.h >= prevMovement.ah;
-        const prevDistance = prevIsH ? prevMovement.h : prevMovement.ah;
-        sumDist = lastDistance + prevDistance;
-        sumLeftNum = WHEEL_EU[(currentIdx - sumDist + L * 10) % L];
-        sumRightNum = WHEEL_EU[(currentIdx + sumDist) % L];
-      }
-    }
+    // Lógica solicitada pelo usuário:
+    // O RESULTADO é a distância (ex: 3).
+    // O HORÁRIO mostra o número que está a essa distância (passos reais = distância + 1) à frente do ATUAL.
+    // O ANTI-HORÁRIO mostra o número que está a essa distância atrás do ATUAL.
+    
+    const steps = lastDistance + 1;
+    targetHorario = wheelStepEU(lastMovement.to, steps);
+    targetAntiHorario = wheelStepEU(lastMovement.to, -steps);
   }
 
   // Lógica da calculadora de vizinhos
@@ -85,12 +80,6 @@ export default function MovementPanel({
     // Vizinho à direita
     const rightIdx = (idx + 1) % L;
     const rightNum = WHEEL_EU[rightIdx];
-
-    // Cálculo de distâncias para ESQ+X e DIR+X
-    // ESQ + X (H): distância do vizinho esquerdo para X no sentido horário
-    // ESQ + X (A): distância do vizinho esquerdo para X no sentido anti-horário
-    // DIR + X (H): distância do vizinho direito para X no sentido horário
-    // DIR + X (A): distância do vizinho direito para X no sentido anti-horário
 
     const { h: esqH, ah: esqA } = wheelDistance(leftNum, num);
     const { h: dirH, ah: dirA } = wheelDistance(rightNum, num);
@@ -135,7 +124,7 @@ export default function MovementPanel({
           <div className="highlightRow">
             <div className="highlightBox">
               <div className="highlightLabel">HORÁRIO</div>
-              <div className="highlightValue" style={{ color: lastIsH ? "#ffd000" : "#aaa" }}>{lastMovement.h}</div>
+              <div className="highlightValue" style={{ color: "#ffd000" }}>{targetHorario !== -1 ? targetHorario : "--"}</div>
             </div>
             <div className="highlightBox">
               <div className="highlightLabel">ATUAL</div>
@@ -143,22 +132,11 @@ export default function MovementPanel({
             </div>
             <div className="highlightBox">
               <div className="highlightLabel">ANTI-HORÁRIO</div>
-              <div className="highlightValue" style={{ color: !lastIsH ? "#ffd000" : "#aaa" }}>{lastMovement.ah}</div>
+              <div className="highlightValue" style={{ color: "#ffd000" }}>{targetAntiHorario !== -1 ? targetAntiHorario : "--"}</div>
             </div>
             <div className="highlightBox">
               <div className="highlightLabel">RESULTADO</div>
               <div className="highlightValue" style={{ color: getMovementColor(lastDistance) }}>{lastDirection}/{lastDistance}</div>
-            </div>
-          </div>
-
-          <div className="highlightRow secondary">
-            <div className="highlightBox">
-              <div className="highlightLabel">ESQUERDA</div>
-              <div className="highlightValue" style={{ color: "#26d07c" }}>{sumLeftNum !== -1 ? sumLeftNum : "--"}</div>
-            </div>
-            <div className="highlightBox">
-              <div className="highlightLabel">DIREITA</div>
-              <div className="highlightValue" style={{ color: "#26d07c" }}>{sumRightNum !== -1 ? sumRightNum : "--"}</div>
             </div>
           </div>
         </div>
@@ -253,12 +231,9 @@ export default function MovementPanel({
           grid-template-columns: repeat(4, 1fr);
           gap: 4px;
         }
-        .highlightRow.secondary {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .highlightBox { padding: 4px 2px; border-radius: 4px; }
-        .highlightLabel { font-size: 7px; margin-bottom: 1px; }
-        .highlightValue { font-size: 14px; }
+        .highlightBox { padding: 4px 2px; border-radius: 4px; text-align: center; }
+        .highlightLabel { font-size: 7px; margin-bottom: 1px; color: #888; font-weight: bold; }
+        .highlightValue { font-size: 14px; font-weight: bold; }
         
         .calculatorSection {
           border-top: 1px solid rgba(255,255,255,0.1);
@@ -332,11 +307,12 @@ export default function MovementPanel({
           gap: 2px; 
           margin-bottom: 8px;
         }
-        .movementGridCell { padding: 2px; font-size: 9px; min-height: 30px; }
-        .gridCellNum { font-weight: bold; }
+        .movementGridCell { padding: 2px; font-size: 9px; min-height: 30px; text-align: center; border-left: 3px solid transparent; background: rgba(255,255,255,0.02); border-radius: 2px; cursor: pointer; }
+        .gridCellNum { font-weight: bold; color: #fff; }
         .gridCellDist { font-size: 8px; }
-        .modeBtn { padding: 2px 6px; font-size: 9px; }
-        .btn-reset-marks { padding: 2px 6px; font-size: 9px; }
+        .modeBtn { padding: 2px 6px; font-size: 9px; background: #333; color: #fff; border: none; border-radius: 3px; cursor: pointer; }
+        .modeBtn.active { background: #555; font-weight: bold; }
+        .btn-reset-marks { padding: 2px 6px; font-size: 9px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; }
       `}</style>
     </div>
   );
