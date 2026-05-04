@@ -52,47 +52,23 @@ export default function MovementPanel({
     lastDistance = lastIsH ? lastMovement.h : lastMovement.ah;
     lastDirection = lastIsH ? "H" : "A";
 
-    // Lógica solicitada pelo usuário:
-    // O RESULTADO é a distância (ex: 3).
-    // O HORÁRIO mostra o número que está a essa distância (passos reais = distância + 1) à frente do ATUAL.
-    // O ANTI-HORÁRIO mostra o número que está a essa distância atrás do ATUAL.
-    
     const steps = lastDistance + 1;
     targetHorario = wheelStepEU(lastMovement.to, steps);
     targetAntiHorario = wheelStepEU(lastMovement.to, -steps);
   }
 
-  // Lógica da calculadora de vizinhos
+  // Lógica da calculadora de VALOR X simplificada
   const calcResults = (() => {
-    if (calcValue === "") return null;
-    const num = parseInt(calcValue);
-    if (isNaN(num) || num < 0 || num > 36) return null;
+    if (calcValue === "" || !lastMovement) return null;
+    const x = parseInt(calcValue);
+    if (isNaN(x) || x < 0) return null;
 
-    const idx = WHEEL_EU.indexOf(num);
-    if (idx < 0) return null;
+    // Mesma lógica: passos = X + 1
+    const steps = x + 1;
+    const h = wheelStepEU(lastMovement.to, steps);
+    const a = wheelStepEU(lastMovement.to, -steps);
 
-    const L = WHEEL_EU.length;
-    
-    // Vizinho à esquerda
-    const leftIdx = (idx - 1 + L) % L;
-    const leftNum = WHEEL_EU[leftIdx];
-    
-    // Vizinho à direita
-    const rightIdx = (idx + 1) % L;
-    const rightNum = WHEEL_EU[rightIdx];
-
-    const { h: esqH, ah: esqA } = wheelDistance(leftNum, num);
-    const { h: dirH, ah: dirA } = wheelDistance(rightNum, num);
-
-    return {
-      num,
-      leftNum,
-      rightNum,
-      esqH,
-      esqA,
-      dirH,
-      dirA
-    };
+    return { h, a };
   })();
 
   const handleCellClick = (direction: string, distance: number) => {
@@ -142,7 +118,7 @@ export default function MovementPanel({
         </div>
       )}
 
-      {/* Calculadora de Vizinhos */}
+      {/* Calculadora de VALOR X Simplificada */}
       <div className="calculatorSection">
         <div className="calcRow">
           <div className="calcLabel">VALOR X:</div>
@@ -162,20 +138,12 @@ export default function MovementPanel({
           <div className="calcResults">
             <div className="calcResultRow">
               <div className="calcResultBox">
-                <span className="calcResultLabel">ESQ + X (H)</span>
-                <span className="calcResultValue">{calcResults.esqH}</span>
+                <span className="calcResultLabel">HORÁRIO</span>
+                <span className="calcResultValue">{calcResults.h}</span>
               </div>
               <div className="calcResultBox">
-                <span className="calcResultLabel">ESQ + X (A)</span>
-                <span className="calcResultValue">{calcResults.esqA}</span>
-              </div>
-              <div className="calcResultBox">
-                <span className="calcResultLabel">DIR + X (H)</span>
-                <span className="calcResultValue">{calcResults.dirH}</span>
-              </div>
-              <div className="calcResultBox">
-                <span className="calcResultLabel">DIR + X (A)</span>
-                <span className="calcResultValue">{calcResults.dirA}</span>
+                <span className="calcResultLabel">ANTI-HORÁRIO</span>
+                <span className="calcResultValue">{calcResults.a}</span>
               </div>
             </div>
           </div>
@@ -275,28 +243,28 @@ export default function MovementPanel({
         }
         .calcResultRow {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 3px;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 6px;
         }
         .calcResultBox {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 3px;
+          padding: 6px;
           background: rgba(255,255,255,0.05);
-          border-radius: 3px;
+          border-radius: 4px;
           border: 1px solid rgba(255,255,255,0.1);
         }
         .calcResultLabel {
-          font-size: 7px;
+          font-size: 8px;
           color: #888;
           font-weight: 700;
-          margin-bottom: 1px;
+          margin-bottom: 2px;
           text-align: center;
           line-height: 1;
         }
         .calcResultValue {
-          font-size: 11px;
+          font-size: 13px;
           font-weight: bold;
           color: #26d07c;
         }
