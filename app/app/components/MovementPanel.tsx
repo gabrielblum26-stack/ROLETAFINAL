@@ -82,6 +82,14 @@ export default function MovementPanel({
     });
   };
 
+  const handleXClick = (val: number) => {
+    if (calcValue === val.toString()) {
+      setCalcValue("");
+    } else {
+      setCalcValue(val.toString());
+    }
+  };
+
   return (
     <div className="movementPanel compact">
       <div className="movementHeader">
@@ -118,20 +126,26 @@ export default function MovementPanel({
         </div>
       )}
 
-      {/* Calculadora de VALOR X Simplificada */}
+      {/* Calculadora de VALOR X com Botões */}
       <div className="calculatorSection">
-        <div className="calcRow">
-          <div className="calcLabel">VALOR X:</div>
-          <input
-            type="number"
-            min="0"
-            max="36"
-            value={calcValue}
-            onChange={(e) => setCalcValue(e.target.value)}
-            placeholder="0"
-            className="calcInput"
-          />
-          <div className="calcDisplay">{calcValue || "0"}</div>
+        <div className="calcHeader">
+          <div className="calcLabel">VALOR X: <span className="calcDisplay">{calcValue || "0"}</span></div>
+        </div>
+        
+        <div className="xButtonsGrid">
+          {[...Array(18)].map((_, i) => {
+            const val = i + 1;
+            const isSelected = calcValue === val.toString();
+            return (
+              <button
+                key={val}
+                className={`xBtn ${isSelected ? "active" : ""}`}
+                onClick={() => handleXClick(val)}
+              >
+                {val}
+              </button>
+            );
+          })}
         </div>
 
         {calcResults && (
@@ -205,37 +219,56 @@ export default function MovementPanel({
         
         .calculatorSection {
           border-top: 1px solid rgba(255,255,255,0.1);
-          padding-top: 6px;
-          margin-bottom: 6px;
+          padding-top: 8px;
+          margin-bottom: 8px;
         }
-        .calcRow {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          margin-bottom: 6px;
+        .calcHeader {
+          margin-bottom: 8px;
         }
         .calcLabel {
-          font-size: 9px;
-          font-weight: 700;
+          font-size: 10px;
+          font-weight: 800;
           color: #aaa;
-          min-width: 50px;
-        }
-        .calcInput {
-          width: 50px;
-          padding: 4px 6px;
-          border: 1px solid #444;
-          background: #1a1a1a;
-          color: #fff;
-          border-radius: 3px;
-          font-size: 11px;
-          text-align: center;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         .calcDisplay {
-          font-size: 12px;
-          font-weight: bold;
           color: #ffd000;
-          min-width: 20px;
+          font-size: 12px;
+          margin-left: 4px;
         }
+        
+        .xButtonsGrid {
+          display: grid;
+          grid-template-columns: repeat(9, 1fr);
+          gap: 4px;
+          margin-bottom: 8px;
+        }
+        
+        .xBtn {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: #fff;
+          padding: 6px 0;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .xBtn:hover {
+          background: rgba(255,255,255,0.1);
+          border-color: rgba(255,255,255,0.2);
+        }
+        
+        .xBtn.active {
+          background: #ffd000;
+          color: #000;
+          border-color: #fff;
+          box-shadow: 0 0 10px rgba(255,208,0,0.3);
+        }
+
         .calcResults {
           display: flex;
           flex-direction: column;

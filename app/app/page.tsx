@@ -180,7 +180,6 @@ export default function Page() {
   }
 
   function onResetColors() {
-    setHistory([]);
     setSel(initSel());
   }
 
