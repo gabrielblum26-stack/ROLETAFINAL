@@ -30,13 +30,16 @@ function getMovementColor(distance: number): string {
 
 export default function MovementPanel({
   history,
+  selectedX,
+  onXChange,
 }: {
   history: number[];
+  selectedX: number[];
+  onXChange: (val: number[]) => void;
 }) {
   const [mode, setMode] = useState<DistanceMode>("shortest");
   const [activeMarkColor, setActiveMarkColor] = useState<number>(0);
   const [marks, setMarks] = useState<Record<string, string>>({});
-  const [selectedX, setSelectedX] = useState<number[]>([]);
 
   const movements: MovementRecord[] = [];
   for (let i = 0; i < Math.min(history.length - 1, 80); i++) {
@@ -88,13 +91,16 @@ export default function MovementPanel({
   };
 
   const handleXClick = (val: number) => {
-    setSelectedX(prev => {
-      if (prev.includes(val)) {
-        return prev.filter(x => x !== val);
+    if (selectedX.includes(val)) {
+      onXChange(selectedX.filter(x => x !== val));
+    } else {
+      // Limite de 3 números: se já tiver 3, remove o primeiro e adiciona o novo ao final
+      if (selectedX.length >= 3) {
+        onXChange([...selectedX.slice(1), val]);
       } else {
-        return [...prev, val];
+        onXChange([...selectedX, val]);
       }
-    });
+    }
   };
 
   return (
@@ -102,7 +108,7 @@ export default function MovementPanel({
       <div className="movementHeader">
         <div className="movementTitle">DESLOCAMENTO (H/A)</div>
         <div className="movementControls">
-          <button className="btn-reset-marks" onClick={() => { setMarks({}); setSelectedX([]); }}>RESET</button>
+          <button className="btn-reset-marks" onClick={() => { setMarks({}); onXChange([]); }}>RESET</button>
           <div className="movementModeSelector">
             <button className={`modeBtn ${mode === "shortest" ? "active" : ""}`} onClick={() => setMode("shortest")}>CURTO</button>
             <button className={`modeBtn ${mode === "longest" ? "active" : ""}`} onClick={() => setMode("longest")}>LONGO</button>
@@ -137,7 +143,7 @@ export default function MovementPanel({
       <div className="calculatorSection">
         <div className="calcHeader" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="calcLabel">VALORES X SELECIONADOS: </div>
-          <button className="btn-clear-x" onClick={() => setSelectedX([])}>LIMPAR X</button>
+          <button className="btn-clear-x" onClick={() => onXChange([])}>LIMPAR X</button>
         </div>
         
         <div className="xButtonsGrid">

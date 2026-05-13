@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../state/AuthProvider";
-import { colorOf, parseInput, neighborsEU, WHEEL_EU } from "./lib/roulette";
+import { colorOf, parseInput, neighborsEU, WHEEL_EU, wheelStepEU } from "./lib/roulette";
 import { initSel, applyClick, selClass, SelMode, setActiveColor, SEL_ORDER, markMultiple, getNumberColors } from "./lib/selection";
 import RaceTrack from "./components/RaceTrack";
 import TableMap, { type RepHighlight } from "./components/TableMap";
@@ -46,6 +46,7 @@ export default function Page() {
   const [distN1, setDistN1] = useState<number | null>(null);
   const [distN2, setDistN2] = useState<number | null>(null);
   const [pickingFor, setPickingFor] = useState<"n1" | "n2" | null>(null);
+  const [selectedX, setSelectedX] = useState<number[]>([]);
 
   // Estados para minimizar blocos
   const [minimized, setMinimized] = useState({
@@ -255,6 +256,46 @@ export default function Page() {
     };
   };
 
+  // Cores para os botões X selecionados (Sincronizado com MovementPanel)
+  const X_COLORS = [
+    "#3b82f6", "#ef4444", "#22c55e", "#eab308", "#a855f7", "#ec4899", 
+    "#06b6d4", "#f97316", "#8b5cf6", "#14b8a6", "#f43f5e", "#84cc16",
+    "#d946ef", "#6366f1", "#0ea5e9", "#facc15", "#fb7185", "#2dd4bf"
+  ];
+
+  const xHighlightStyles = useMemo(() => {
+    const styles: Record<number, { backgroundColor: string; boxShadow: string; color: string; border?: string }> = {};
+    if (history.length === 0 || selectedX.length === 0) return styles;
+    
+    const lastNum = history[0];
+    // Processamos na ordem inversa para que o X mais recente (último do array) tenha prioridade de cor se houver sobreposição
+    [...selectedX].reverse().forEach((x) => {
+      const color = X_COLORS[(x - 1) % X_COLORS.length];
+      const steps = x + 1;
+      const h = wheelStepEU(lastNum, steps);
+      const ah = wheelStepEU(lastNum, -steps);
+      
+      const style = { 
+        backgroundColor: color, 
+        boxShadow: `0 0 15px ${color}`,
+        color: "#fff",
+        border: "2px solid #fff",
+        zIndex: 10
+      };
+      
+      styles[h] = style;
+      styles[ah] = style;
+      styles[lastNum] = style;
+    });
+    return styles;
+  }, [selectedX, history]);
+
+  const getEnhancedCellStyles = (n: number) => {
+    const xStyle = xHighlightStyles[n];
+    if (xStyle) return xStyle;
+    return getCellStyles(n);
+  };
+
   const topZonePattern = useMemo(() => {
     if (history.length === 0) return null;
     const last = history[0];
@@ -437,7 +478,11 @@ export default function Page() {
             />
           </div>
           <div className="movementWrap">
-            <MovementPanel history={history} />
+            <MovementPanel 
+              history={history} 
+              selectedX={selectedX} 
+              onXChange={setSelectedX} 
+            />
             <div className={`panel distCalcInside ${pickingFor ? 'isPicking' : ''}`}>
               <div className="distCalcTitle">CALCULADORA DE CASAS</div>
               <div className="distCalcContent">
@@ -462,7 +507,7 @@ export default function Page() {
             </div>
             {!minimized.trackMap && (
               <div className="tableMapContainer">
-                <TableMap sel={sel} onPick={onSelect} repHighlights={repHighlights} getCellStyles={getCellStyles} />
+                <TableMap sel={sel} onPick={onSelect} repHighlights={repHighlights} getCellStyles={getEnhancedCellStyles} />
               </div>
             )}
           </div>
@@ -474,7 +519,7 @@ export default function Page() {
             </div>
             {!minimized.raceDist && (
               <>
-                <RaceTrack sel={sel} onPick={onSelect} getCellStyles={getCellStyles} />
+                <RaceTrack sel={sel} onPick={onSelect} getCellStyles={getEnhancedCellStyles} />
                 
                 <div className="quickKeyboard">
                   <div className="keyboardRow">
