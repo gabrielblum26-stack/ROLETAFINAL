@@ -45,7 +45,15 @@ export default function TableMap({
       <div className="table">
         <div 
           className={cellCls(0)} 
-          style={{ gridRow: "1 / span 3", gridColumn: "1", fontSize: 18, ...getCellStyles(0) }} 
+          style={{ 
+            gridRow: "1 / span 3", 
+            gridColumn: "1", 
+            fontSize: 18, 
+            ...getCellStyles(0),
+            border: getCellStyles(0).border || undefined,
+            boxShadow: getCellStyles(0).boxShadow || undefined,
+            zIndex: getCellStyles(0).zIndex || undefined
+          }} 
           onClick={() => onPick(0)}
         >
           0
@@ -57,7 +65,14 @@ export default function TableMap({
               <div
                 key={n}
                 className={cellCls(n)}
-                style={{ gridRow: String(rIdx + 1), gridColumn: String(2 + cIdx), ...getCellStyles(n) }}
+                style={{ 
+                  gridRow: String(rIdx + 1), 
+                  gridColumn: String(2 + cIdx), 
+                  ...getCellStyles(n),
+                  border: getCellStyles(n).border || undefined,
+                  boxShadow: getCellStyles(n).boxShadow || undefined,
+                  zIndex: getCellStyles(n).zIndex || undefined
+                }}
                 onClick={() => onPick(n)}
               >
                 {n}

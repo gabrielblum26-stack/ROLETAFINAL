@@ -283,6 +283,8 @@ export default function Page() {
         zIndex: 10
       };
       
+      // Se houver múltiplos X selecionados, o número atual pode acabar recebendo a cor do último X processado (o primeiro do array original).
+      // No entanto, como usamos reverse(), o X mais recente (último clicado) terá a prioridade final no objeto styles.
       styles[h] = style;
       styles[ah] = style;
       styles[lastNum] = style;
