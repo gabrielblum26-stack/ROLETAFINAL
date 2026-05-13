@@ -12,6 +12,13 @@ export type MovementRecord = {
 
 type DistanceMode = "shortest" | "longest";
 
+// Cores para os botões X selecionados
+const X_COLORS = [
+  "#3b82f6", "#ef4444", "#22c55e", "#eab308", "#a855f7", "#ec4899", 
+  "#06b6d4", "#f97316", "#8b5cf6", "#14b8a6", "#f43f5e", "#84cc16",
+  "#d946ef", "#6366f1", "#0ea5e9", "#facc15", "#fb7185", "#2dd4bf"
+];
+
 // Cores para marcação manual no painel de deslocamento
 const MARK_COLORS = ["#3b82f6", "#a855f7", "#ec4899", "#eab308"]; // Azul, Roxo, Rosa, Amarelo
 
@@ -29,7 +36,7 @@ export default function MovementPanel({
   const [mode, setMode] = useState<DistanceMode>("shortest");
   const [activeMarkColor, setActiveMarkColor] = useState<number>(0);
   const [marks, setMarks] = useState<Record<string, string>>({});
-  const [calcValue, setCalcValue] = useState<string>("");
+  const [selectedX, setSelectedX] = useState<number[]>([]);
 
   const movements: MovementRecord[] = [];
   for (let i = 0; i < Math.min(history.length - 1, 80); i++) {
@@ -57,18 +64,16 @@ export default function MovementPanel({
     targetAntiHorario = wheelStepEU(lastMovement.to, -steps);
   }
 
-  // Lógica da calculadora de VALOR X simplificada
-  const calcResults = (() => {
-    if (calcValue === "" || !lastMovement) return null;
-    const x = parseInt(calcValue);
-    if (isNaN(x) || x < 0) return null;
-
-    // Mesma lógica: passos = X + 1
-    const steps = x + 1;
-    const h = wheelStepEU(lastMovement.to, steps);
-    const a = wheelStepEU(lastMovement.to, -steps);
-
-    return { h, a };
+  // Lógica da calculadora de MÚLTIPLOS VALORES X
+  const allCalcResults = (() => {
+    if (selectedX.length === 0 || !lastMovement) return [];
+    
+    return selectedX.sort((a, b) => a - b).map(x => {
+      const steps = x + 1;
+      const h = wheelStepEU(lastMovement.to, steps);
+      const a = wheelStepEU(lastMovement.to, -steps);
+      return { x, h, a, color: X_COLORS[(x - 1) % X_COLORS.length] };
+    });
   })();
 
   const handleCellClick = (direction: string, distance: number) => {
@@ -83,11 +88,13 @@ export default function MovementPanel({
   };
 
   const handleXClick = (val: number) => {
-    if (calcValue === val.toString()) {
-      setCalcValue("");
-    } else {
-      setCalcValue(val.toString());
-    }
+    setSelectedX(prev => {
+      if (prev.includes(val)) {
+        return prev.filter(x => x !== val);
+      } else {
+        return [...prev, val];
+      }
+    });
   };
 
   return (
@@ -95,7 +102,7 @@ export default function MovementPanel({
       <div className="movementHeader">
         <div className="movementTitle">DESLOCAMENTO (H/A)</div>
         <div className="movementControls">
-          <button className="btn-reset-marks" onClick={() => setMarks({})}>RESET</button>
+          <button className="btn-reset-marks" onClick={() => { setMarks({}); setSelectedX([]); }}>RESET</button>
           <div className="movementModeSelector">
             <button className={`modeBtn ${mode === "shortest" ? "active" : ""}`} onClick={() => setMode("shortest")}>CURTO</button>
             <button className={`modeBtn ${mode === "longest" ? "active" : ""}`} onClick={() => setMode("longest")}>LONGO</button>
@@ -126,20 +133,22 @@ export default function MovementPanel({
         </div>
       )}
 
-      {/* Calculadora de VALOR X com Botões */}
+      {/* Calculadora de VALOR X com Múltipla Seleção */}
       <div className="calculatorSection">
         <div className="calcHeader">
-          <div className="calcLabel">VALOR X: <span className="calcDisplay">{calcValue || "0"}</span></div>
+          <div className="calcLabel">VALORES X SELECIONADOS: </div>
         </div>
         
         <div className="xButtonsGrid">
           {[...Array(18)].map((_, i) => {
             const val = i + 1;
-            const isSelected = calcValue === val.toString();
+            const isSelected = selectedX.includes(val);
+            const btnColor = X_COLORS[i % X_COLORS.length];
             return (
               <button
                 key={val}
                 className={`xBtn ${isSelected ? "active" : ""}`}
+                style={isSelected ? { backgroundColor: btnColor, borderColor: '#fff', color: '#fff' } : {}}
                 onClick={() => handleXClick(val)}
               >
                 {val}
@@ -148,17 +157,21 @@ export default function MovementPanel({
           })}
         </div>
 
-        {calcResults && (
-          <div className="calcResults">
-            <div className="calcResultRow">
-              <div className="calcResultBox">
-                <span className="calcResultLabel">HORÁRIO</span>
-                <span className="calcResultValue">{calcResults.h}</span>
-              </div>
-              <div className="calcResultBox">
-                <span className="calcResultLabel">ANTI-HORÁRIO</span>
-                <span className="calcResultValue">{calcResults.a}</span>
-              </div>
+        {allCalcResults.length > 0 && (
+          <div className="multiResultsContainer">
+            <div className="resultsHeader">
+              <span>X</span>
+              <span>HORÁRIO</span>
+              <span>ANTI-H</span>
+            </div>
+            <div className="resultsList">
+              {allCalcResults.map((res) => (
+                <div key={res.x} className="resultItem" style={{ borderLeft: `3px solid ${res.color}` }}>
+                  <span className="resultX" style={{ color: res.color }}>{res.x}</span>
+                  <span className="resultVal">{res.h}</span>
+                  <span className="resultVal">{res.a}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -194,7 +207,7 @@ export default function MovementPanel({
       </div>
 
       <style jsx>{`
-        .movementPanel.compact { padding: 8px; }
+        .movementPanel.compact { padding: 8px; display: flex; flex-direction: column; height: 100%; }
         .movementTitle { font-size: 11px; font-weight: 900; color: #888; }
         .movementHeader {
           display: flex;
@@ -221,9 +234,11 @@ export default function MovementPanel({
           border-top: 1px solid rgba(255,255,255,0.1);
           padding-top: 8px;
           margin-bottom: 8px;
+          display: flex;
+          flex-direction: column;
         }
         .calcHeader {
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
         .calcLabel {
           font-size: 10px;
@@ -232,17 +247,12 @@ export default function MovementPanel({
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
-        .calcDisplay {
-          color: #ffd000;
-          font-size: 12px;
-          margin-left: 4px;
-        }
         
         .xButtonsGrid {
           display: grid;
           grid-template-columns: repeat(9, 1fr);
           gap: 4px;
-          margin-bottom: 8px;
+          margin-bottom: 10px;
         }
         
         .xBtn {
@@ -263,43 +273,52 @@ export default function MovementPanel({
         }
         
         .xBtn.active {
-          background: #ffd000;
-          color: #000;
-          border-color: #fff;
-          box-shadow: 0 0 10px rgba(255,208,0,0.3);
+          box-shadow: 0 0 10px rgba(255,255,255,0.2);
+          transform: scale(1.05);
         }
 
-        .calcResults {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
+        .multiResultsContainer {
+          background: rgba(0,0,0,0.2);
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.05);
+          margin-bottom: 8px;
         }
-        .calcResultRow {
+
+        .resultsHeader {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 6px;
-        }
-        .calcResultBox {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 6px;
+          grid-template-columns: 30px 1fr 1fr;
+          padding: 4px 8px;
           background: rgba(255,255,255,0.05);
-          border-radius: 4px;
-          border: 1px solid rgba(255,255,255,0.1);
-        }
-        .calcResultLabel {
           font-size: 8px;
-          color: #888;
-          font-weight: 700;
-          margin-bottom: 2px;
+          font-weight: 900;
+          color: #666;
           text-align: center;
-          line-height: 1;
         }
-        .calcResultValue {
-          font-size: 13px;
+
+        .resultsList {
+          max-height: 120px;
+          overflow-y: auto;
+        }
+
+        .resultItem {
+          display: grid;
+          grid-template-columns: 30px 1fr 1fr;
+          padding: 6px 8px;
+          border-bottom: 1px solid rgba(255,255,255,0.02);
+          align-items: center;
+          text-align: center;
+        }
+
+        .resultX {
+          font-weight: 900;
+          font-size: 12px;
+        }
+
+        .resultVal {
           font-weight: bold;
-          color: #26d07c;
+          font-size: 13px;
+          color: #fff;
         }
         
         .movementGrid.compact { 
@@ -307,6 +326,8 @@ export default function MovementPanel({
           grid-template-columns: repeat(8, 1fr); 
           gap: 2px; 
           margin-bottom: 8px;
+          flex: 1;
+          overflow-y: auto;
         }
         .movementGridCell { padding: 2px; font-size: 9px; min-height: 30px; text-align: center; border-left: 3px solid transparent; background: rgba(255,255,255,0.02); border-radius: 2px; cursor: pointer; }
         .gridCellNum { font-weight: bold; color: #fff; }
