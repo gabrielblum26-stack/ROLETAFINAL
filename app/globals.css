@@ -1394,3 +1394,51 @@ input[type="text"]{
   padding-bottom: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+/* ===== QUICK KEYBOARD BELOW RACETRACK ===== */
+.quickKeyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 16px;
+  margin-top: 10px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.keyboardRow {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.keyBtn {
+  flex: 1;
+  height: 40px;
+  min-width: 30px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keyBtn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.keyBtn:active {
+  transform: translateY(0);
+}
+
+.keyBtn.green { background: #0f7a3a; border-color: #16a34a; }
+.keyBtn.red { background: #c82d2d; border-color: #ef4444; }
+.keyBtn.black { background: #1c1c1c; border-color: #444; }

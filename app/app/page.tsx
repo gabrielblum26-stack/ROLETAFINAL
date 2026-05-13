@@ -473,7 +473,27 @@ export default function Page() {
               <button className="btn-min" onClick={() => toggleMin("raceDist")}>{minimized.raceDist ? "+" : "−"}</button>
             </div>
             {!minimized.raceDist && (
-              <RaceTrack sel={sel} onPick={onSelect} getCellStyles={getCellStyles} />
+              <>
+                <RaceTrack sel={sel} onPick={onSelect} getCellStyles={getCellStyles} />
+                
+                <div className="quickKeyboard">
+                  <div className="keyboardRow">
+                    {[0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36].map(n => (
+                      <button key={n} className={`keyBtn ${colorOf(n)}`} onClick={() => addNumber(n)}>{n}</button>
+                    ))}
+                  </div>
+                  <div className="keyboardRow">
+                    {[2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35].map(n => (
+                      <button key={n} className={`keyBtn ${colorOf(n)}`} onClick={() => addNumber(n)}>{n}</button>
+                    ))}
+                  </div>
+                  <div className="keyboardRow">
+                    {[1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34].map(n => (
+                      <button key={n} className={`keyBtn ${colorOf(n)}`} onClick={() => addNumber(n)}>{n}</button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
