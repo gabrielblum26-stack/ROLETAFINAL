@@ -15,7 +15,7 @@ import { Metric } from "./components/Metric";
 import MovementPanel from "./components/MovementPanel";
 
 const SHORT_N = 20;
-const LONG_N = 150;
+const LONG_N = 200;
 
 export default function Page() {
   const router = useRouter();

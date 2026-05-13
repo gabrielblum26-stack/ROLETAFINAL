@@ -42,7 +42,7 @@ export default function MovementPanel({
   const [marks, setMarks] = useState<Record<string, string>>({});
 
   const movements: MovementRecord[] = [];
-  for (let i = 0; i < Math.min(history.length - 1, 80); i++) {
+  for (let i = 0; i < Math.min(history.length - 1, 100); i++) {
     const from = history[i + 1];
     const to = history[i];
     const { h, ah } = wheelDistance(from, to);
@@ -330,11 +330,11 @@ export default function MovementPanel({
         
         .movementGrid.compact { 
           display: grid; 
-          grid-template-columns: repeat(8, 1fr); 
+          grid-template-columns: repeat(10, 1fr); 
           gap: 2px; 
           margin-bottom: 8px;
-          flex: 1;
-          overflow-y: auto;
+          flex: none;
+          overflow-y: hidden;
         }
         .movementGridCell { 
           aspect-ratio: 1 / 1;

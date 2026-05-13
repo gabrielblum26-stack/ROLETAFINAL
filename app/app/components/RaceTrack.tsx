@@ -59,7 +59,8 @@ function buildTrackPoints(): Pt[] {
   return pts;
 }
 
-function selectionFill(sel: SelState, n: number) {
+function selectionFill(sel: SelState, n: number, customStyles?: React.CSSProperties) {
+  if (customStyles?.backgroundColor) return customStyles.backgroundColor;
   const colors = getNumberColors(sel, n);
   if (colors.length === 0) return null;
   if (colors.length === 1) return colors[0];
@@ -128,15 +129,15 @@ export default function RaceTrack({
         {pts.map((p) => {
           const n = p.n;
           const base = colorOf(n);
-          const override = selectionFill(sel, n);
-          const fill = override ?? `var(--${base})`;
           const customStyles = getCellStyles(n);
+          const override = selectionFill(sel, n, customStyles);
+          const fill = override ?? `var(--${base})`;
           
           return (
             <g 
               key={n} 
               onClick={() => onPick(n)} 
-              style={{ cursor: "pointer", ...customStyles }}
+              style={{ cursor: "pointer" }}
               className="raceNode"
             >
               <circle
@@ -144,8 +145,9 @@ export default function RaceTrack({
                 cy={p.y}
                 r="22"
                 fill={fill}
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="1"
+                stroke={customStyles?.border ? "#fff" : "rgba(255,255,255,0.2)"}
+                strokeWidth={customStyles?.border ? "3" : "1"}
+                style={{ filter: customStyles?.boxShadow ? `drop-shadow(0 0 8px ${customStyles.backgroundColor})` : 'none' }}
                 className="raceCell"
               />
               <text 
