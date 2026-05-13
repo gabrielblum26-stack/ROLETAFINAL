@@ -135,8 +135,9 @@ export default function MovementPanel({
 
       {/* Calculadora de VALOR X com Múltipla Seleção */}
       <div className="calculatorSection">
-        <div className="calcHeader">
+        <div className="calcHeader" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="calcLabel">VALORES X SELECIONADOS: </div>
+          <button className="btn-clear-x" onClick={() => setSelectedX([])}>LIMPAR X</button>
         </div>
         
         <div className="xButtonsGrid">
@@ -335,6 +336,8 @@ export default function MovementPanel({
         .modeBtn { padding: 2px 6px; font-size: 9px; background: #333; color: #fff; border: none; border-radius: 3px; cursor: pointer; }
         .modeBtn.active { background: #555; font-weight: bold; }
         .btn-reset-marks { padding: 2px 6px; font-size: 9px; background: #444; color: #fff; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-clear-x { padding: 2px 6px; font-size: 8px; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .btn-clear-x:hover { background: rgba(239, 68, 68, 0.3); border-color: #ef4444; }
       `}</style>
     </div>
   );
