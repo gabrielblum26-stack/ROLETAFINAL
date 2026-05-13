@@ -330,7 +330,22 @@ export default function MovementPanel({
           flex: 1;
           overflow-y: auto;
         }
-        .movementGridCell { padding: 2px; font-size: 9px; min-height: 30px; text-align: center; border-left: 3px solid transparent; background: rgba(255,255,255,0.02); border-radius: 2px; cursor: pointer; }
+        .movementGridCell { 
+          aspect-ratio: 1 / 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2px; 
+          font-size: 9px; 
+          text-align: center; 
+          border-left: 3px solid transparent; 
+          background: rgba(255,255,255,0.02); 
+          border-radius: 4px; 
+          cursor: pointer; 
+          transition: all 0.2s;
+        }
+        .movementGridCell:hover { background: rgba(255,255,255,0.08); }
         .gridCellNum { font-weight: bold; color: #fff; }
         .gridCellDist { font-size: 8px; }
         .modeBtn { padding: 2px 6px; font-size: 9px; background: #333; color: #fff; border: none; border-radius: 3px; cursor: pointer; }
