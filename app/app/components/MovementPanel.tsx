@@ -94,12 +94,8 @@ export default function MovementPanel({
     if (selectedX.includes(val)) {
       onXChange(selectedX.filter(x => x !== val));
     } else {
-      // Limite de 3 números: se já tiver 3, remove o primeiro e adiciona o novo ao final
-      if (selectedX.length >= 3) {
-        onXChange([...selectedX.slice(1), val]);
-      } else {
-        onXChange([...selectedX, val]);
-      }
+      // Removido o limite de 3 números para permitir até 18
+      onXChange([...selectedX, val]);
     }
   };
 
