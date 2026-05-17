@@ -24,8 +24,9 @@ export function neighborsEU(n: number): { prev: number; current: number; next: n
 }
 
 export function parseInput(raw: string): number[] {
+  // Aceita vírgula ou espaço como separador
   return raw
-    .split(",")
+    .split(/[\s,]+/)
     .map(s => s.trim())
     .filter(Boolean)
     .map(s => Number(s))

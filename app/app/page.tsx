@@ -336,11 +336,11 @@ export default function Page() {
       <div className="panel topbar">
         <div className="topbarLine">
           <div className="userGreeting">Olá, Cleber!</div>
-          <label>Digite (vírgula):</label>
+          <label>Digite (vírgula ou espaço):</label>
           <div className="inputWrap">
             <input
               type="text"
-              placeholder="Ex: 1,24,36"
+              placeholder="Ex: 1 24 36 ou 1,24,36"
               value={raw}
               onChange={(e) => setRaw(e.target.value)}
               onKeyDown={(e) => {
