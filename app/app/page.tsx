@@ -171,6 +171,16 @@ export default function Page() {
     }
   }
 
+  function onSendInverted() {
+    const nums = parseInput(raw);
+    if (nums.length > 0) {
+      // Inverte a ordem dos números
+      const invertedNums = nums.reverse();
+      invertedNums.forEach(addNumber);
+      setRaw("");
+    }
+  }
+
   function onUndoLast() {
     if (history.length > 0) setHistory(history.slice(1));
   }
@@ -352,6 +362,7 @@ export default function Page() {
             />
           </div>
           <button className="btn btn-send" onClick={onSend}>ENVIAR</button>
+          <button className="btn btn-send" onClick={onSendInverted} style={{ background: "#ef4444", color: "#fff" }}>INVERTER E ENVIAR</button>
           <button className="btn btn-undo" onClick={onUndoLast}>APAGAR</button>
           <button className="btn btn-reset" onClick={onResetAll}>RESET TOTAL</button>
           <button className="btn btn-keyboard" onClick={openKeyboard} style={{ background: "#9333ea", color: "#fff" }}>
